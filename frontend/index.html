@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRVM TERMINAL · Phase 2B · Connected</title>
+<title>BRVM TERMINAL · Phase 2C · Auth</title>
 
 <!-- LIBRAIRIES EXTERNES -->
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
@@ -12,7 +12,7 @@
 <link href="https://cdn.jsdelivr.net/fontsource/css/jetbrains-mono@latest/index.css" rel="stylesheet">
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
 
-<!-- SCRIPTS MODULES (Option A - Connexion Backend) -->
+<!-- SCRIPTS MODULES -->
 <script src="js/api.js"></script>
 <script src="js/market.js"></script>
 <script src="js/predictions.js"></script>
@@ -58,6 +58,7 @@ html, body {
 
 .app { display: flex; flex-direction: column; height: 100vh; }
 
+/* HEADER */
 .header {
   background: var(--panel-2); border-bottom: 1px solid var(--border-2);
   padding: 6px 12px; display: flex; align-items: center; gap: 16px;
@@ -80,7 +81,6 @@ html, body {
 .idx-up { color: var(--up); }
 .status { color: var(--muted); }
 .open { color: var(--up); font-weight: bold; }
-.offline { color: var(--down); font-weight: bold; }
 .settings-btn {
   background: var(--panel-3); border: 1px solid var(--border-2);
   color: var(--text); padding: 4px 8px; cursor: pointer; font-size: 14px;
@@ -461,7 +461,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Indicateur de connexion API */
 .api-status {
   display: inline-flex;
   align-items: center;
@@ -491,6 +490,138 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH MODAL (Phase 2C)
+   ═══════════════════════════════════════════════════════════════ */
+.auth-modal { max-width: 400px; }
+.auth-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-2);
+}
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.auth-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-form.hidden { display: none; }
+.auth-error {
+  background: rgba(255, 51, 51, 0.1);
+  border: 1px solid var(--down);
+  color: var(--down);
+  padding: 8px;
+  font-size: 10px;
+  border-radius: 3px;
+  display: none;
+}
+.auth-error.show { display: block; }
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.15s;
+}
+.user-badge:hover { border-color: var(--accent); }
+.user-badge .avatar {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+}
+.user-badge .username {
+  color: var(--text);
+  font-weight: bold;
+}
+.user-badge .logout {
+  color: var(--muted);
+  margin-left: 4px;
+}
+.user-badge .logout:hover { color: var(--down); }
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-2);
+  min-width: 220px;
+  box-shadow: 0 4px 12px var(--shadow);
+  z-index: 1000;
+  display: none;
+}
+.user-menu.show { display: block; }
+.user-menu-item {
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.user-menu-item:hover {
+  background: var(--panel-3);
+  color: var(--accent);
+}
+.user-menu-item.danger { color: var(--down); }
+.user-menu-item.danger:hover { background: rgba(255, 51, 51, 0.1); }
+.user-menu-header {
+  padding: 12px;
+  background: var(--panel-3);
+  border-bottom: 1px solid var(--border-2);
+}
+.user-menu-header .name {
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 12px;
+}
+.user-menu-header .email {
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.user-menu-header .role {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: #000;
+  font-size: 9px;
+  font-weight: bold;
+  border-radius: 2px;
+}
+
+.user-wrapper { position: relative; }
 </style>
 </head>
 <body>
@@ -512,6 +643,29 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
         <span class="dot"></span>
         <span id="api-status-text">CONNEXION...</span>
       </span>
+      
+      <!-- ZONE UTILISATEUR (Phase 2C) -->
+      <div class="user-wrapper" id="user-wrapper">
+        <div class="user-badge" id="user-badge" style="display:none" onclick="toggleUserMenu(event)">
+          <div class="avatar" id="user-avatar">?</div>
+          <span class="username" id="user-username">...</span>
+          <span class="logout" title="Déconnexion">⏻</span>
+        </div>
+        <button class="settings-btn" id="login-btn" onclick="openAuthModal()" title="Connexion">👤</button>
+        
+        <div class="user-menu" id="user-menu">
+          <div class="user-menu-header">
+            <div class="name" id="menu-name">...</div>
+            <div class="email" id="menu-email">...</div>
+            <div class="role" id="menu-role">TRADER</div>
+          </div>
+          <div class="user-menu-item" onclick="showProfile()">👤 Mon Profil</div>
+          <div class="user-menu-item" onclick="showAPIKeys()">🔑 Mes API Keys</div>
+          <div class="user-menu-item" onclick="openSettings()">⚙ Paramètres</div>
+          <div class="user-menu-item danger" onclick="logout()">⏻ Déconnexion</div>
+        </div>
+      </div>
+      
       <button class="settings-btn" id="settings-btn" title="Paramètres">⚙</button>
     </div>
   </div>
@@ -1022,11 +1176,10 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
     <div>
       API: <span id="ft-api" class="w">VÉRIFICATION...</span> ·
       LATENCE: <span class="w" id="ft-latency">--ms</span> ·
-      WS: <span class="ok">ACTIF</span> ·
-      DB: <span class="ok">OK</span> ·
+      USER: <span class="w" id="ft-user">ANONYME</span> ·
       THÈME: <span class="w" id="ft-theme">SOMBRE</span>
     </div>
-    <div>BRVM TERMINAL v3.0 · PHASE 2B CONNECTED</div>
+    <div>BRVM TERMINAL v3.1 · PHASE 2C AUTH</div>
   </div>
 
 </div>
@@ -1061,6 +1214,50 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
     <button class="btn" id="modal-close" style="margin-top:12px">FERMER</button>
+  </div>
+</div>
+
+<!-- AUTH MODAL (Phase 2C) -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal auth-modal">
+    <h2>👤 ACCÈS TERMINAL</h2>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">CONNEXION</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">INSCRIPTION</button>
+    </div>
+    
+    <div class="auth-error" id="auth-error"></div>
+    
+    <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-row">
+        <label>Nom d'utilisateur</label>
+        <input type="text" id="login-username" required autocomplete="username">
+      </div>
+      <div class="form-row">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn">SE CONNECTER</button>
+    </form>
+    
+    <form class="auth-form hidden" id="register-form" onsubmit="handleRegister(event)">
+      <div class="form-row">
+        <label>Nom d'utilisateur (3-50 caractères)</label>
+        <input type="text" id="reg-username" required minlength="3" maxlength="50" autocomplete="username">
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" id="reg-email" required autocomplete="email">
+      </div>
+      <div class="form-row">
+        <label>Mot de passe (min. 6 caractères)</label>
+        <input type="password" id="reg-password" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn">CRÉER MON COMPTE</button>
+    </form>
+    
+    <button class="btn" style="margin-top:12px;background:var(--panel-3);color:var(--text)" onclick="closeAuthModal()">ANNULER</button>
   </div>
 </div>
 
@@ -1105,12 +1302,11 @@ let monacoEditor = null;
 let pyodide = null;
 let pyodideReady = false;
 
-// Variables globales pour compatibilité avec scoring.js et leaderboard.js
 window.STOCKS = [];
 window.PREDICTIONS = [];
 
 /* ═══════════════════════════════════════════════════════════════
-   PERSISTANCE LOCALSTORAGE (pour trades et préférences)
+   PERSISTANCE LOCALSTORAGE
    ═══════════════════════════════════════════════════════════════ */
 function saveState() {
   try {
@@ -1160,7 +1356,7 @@ function css(v) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GÉNÉRATION OHLCV (fallback local)
+   GÉNÉRATION OHLCV
    ═══════════════════════════════════════════════════════════════ */
 function generateOHLCV(basePrice, days = 365) {
   const data = [];
@@ -1208,7 +1404,6 @@ async function buildChart(containerId, type) {
   if (!c) return null;
   const s = market.stocks.find(x => x.ticker === selectedTicker) || market.stocks[0];
   
-  // Essayer de charger depuis l'API, sinon fallback local
   let data;
   try {
     data = await market.loadOHLCV(s.ticker, type === 'main' ? 365 : 730);
@@ -1312,11 +1507,11 @@ function renderNews() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PREDICTIONS (utilise predictionsManager)
+   PREDICTIONS
    ═══════════════════════════════════════════════════════════════ */
 function renderPredictions() {
   const preds = predictionsManager.getAll();
-  window.PREDICTIONS = preds; // Sync pour scoring/leaderboard
+  window.PREDICTIONS = preds;
   document.getElementById('pred-count').textContent = `(${preds.length})`;
   
   const card = p => {
@@ -1543,7 +1738,6 @@ function updatePortfolio() {
    ═══════════════════════════════════════════════════════════════ */
 function runScenario() {
   const shock = parseFloat(document.getElementById('sc-shock').value) / 100;
-  const horizon = parseInt(document.getElementById('sc-horizon').value);
   const positions = {};
   TRADES.forEach(t => {
     if (!positions[t.ticker]) positions[t.ticker] = { qty: 0, cost: 0 };
@@ -1567,8 +1761,7 @@ function runScenario() {
   const pnlPct = totalCost > 0 ? (pnl / totalCost * 100) : 0;
 
   document.getElementById('sc-result').innerHTML = `
-    <div style="margin-bottom:8px"><strong style="color:var(--accent)">Choc de ${shock * 100}% sur ${horizon} jours</strong></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur actuelle</span><b>${totalCost.toLocaleString('fr-FR')}</b></div>
+    <div style="margin-bottom:8px"><strong style="color:var(--accent)">Choc de ${shock * 100}%</strong></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur après choc</span><b style="color:${pnl >= 0 ? 'var(--up)' : 'var(--down)'}">${currentValue.toFixed(0).toLocaleString('fr-FR')}</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>P&L estimé</span><b class="${pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(0).toLocaleString('fr-FR')}</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Variation</span><b class="${pnlPct >= 0 ? 'pnl-pos' : 'pnl-neg'}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</b></div>
@@ -1647,11 +1840,9 @@ function runBacktest() {
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Capital initial</span><b>${capital.toLocaleString('fr-FR')}</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur finale</span><b style="color:${finalValue >= capital ? 'var(--up)' : 'var(--down)'}">${finalValue.toFixed(0).toLocaleString('fr-FR')}</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Rendement total</span><b style="color:${ret >= 0 ? 'var(--up)' : 'var(--down)'}">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Rendement annualisé</span><b style="color:${annualizedRet >= 0 ? 'var(--up)' : 'var(--down)'}">${annualizedRet >= 0 ? '+' : ''}${annualizedRet.toFixed(2)}%</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Nombre de trades</span><b>${trades}</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Win Rate</span><b>${winRate.toFixed(0)}%</b></div>
     <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Max Drawdown</span><b style="color:var(--down)">-${(maxDD * 100).toFixed(2)}%</b></div>
-    <div style="margin-top:12px;color:var(--dim);font-size:9px">⚠ Simulation sur données générées.</div>
   `;
   toast('✓ Backtest terminé');
 }
@@ -1669,7 +1860,6 @@ function renderAnalyst() {
       <div class="metric"><span class="k">Capitalisation</span><span class="v">${s.cap || 0} Mds FCFA</span></div>
       <div class="metric"><span class="k">PER</span><span class="v">${s.per || '10.0x'}</span></div>
       <div class="metric"><span class="k">Dividend Yield</span><span class="v" style="color:var(--up)">4.2%</span></div>
-      <div class="metric"><span class="k">PBR</span><span class="v">2.8x</span></div>
       <div class="metric"><span class="k">ROE</span><span class="v" style="color:var(--up)">18.5%</span></div>
       <div class="metric"><span class="k">Secteur</span><span class="v">${s.sector || 'N/A'}</span></div>
       <div class="metric"><span class="k">Pays</span><span class="v">${s.country || 'N/A'}</span></div>
@@ -1677,25 +1867,14 @@ function renderAnalyst() {
     <div class="analyst-card">
       <h4>CONSENSUS ANALYSTES</h4>
       <div class="metric"><span class="k">Recommandation</span><span class="v" style="color:var(--up)">ACHAT</span></div>
-      <div class="metric"><span class="k">Buy / Hold / Sell</span><span class="v">7 / 3 / 1</span></div>
       <div class="metric"><span class="k">Prix cible moyen</span><span class="v" style="color:var(--accent)">${((s.price || 0) * 1.08).toFixed(0)}</span></div>
       <div class="metric"><span class="k">Upside potentiel</span><span class="v" style="color:var(--up)">+8.0%</span></div>
     </div>
     <div class="analyst-card">
-      <h4>ANALYSE TECHNIQUE</h4>
-      <div class="metric"><span class="k">RSI (14)</span><span class="v" style="color:var(--up)">58.4</span></div>
-      <div class="metric"><span class="k">MACD</span><span class="v" style="color:var(--up)">BULLISH</span></div>
-      <div class="metric"><span class="k">SMA 20</span><span class="v">${((s.price || 0) * 0.97).toFixed(0)}</span></div>
-      <div class="metric"><span class="k">SMA 50</span><span class="v">${((s.price || 0) * 0.93).toFixed(0)}</span></div>
-      <div class="metric"><span class="k">Support</span><span class="v">${(s.low || 0).toLocaleString('fr-FR')}</span></div>
-      <div class="metric"><span class="k">Résistance</span><span class="v">${((s.price || 0) * 1.05).toFixed(0)}</span></div>
-    </div>
-    <div class="analyst-card">
-      <h4>RISQUES & VOLATILITÉ</h4>
+      <h4>RISQUES</h4>
       <div class="metric"><span class="k">Volatilité 30j</span><span class="v">14.2%</span></div>
       <div class="metric"><span class="k">Beta</span><span class="v">${s.beta || 1.0}</span></div>
       <div class="metric"><span class="k">Max Drawdown 1A</span><span class="v" style="color:var(--down)">-12.4%</span></div>
-      <div class="metric"><span class="k">Sharpe Ratio</span><span class="v" style="color:var(--up)">1.24</span></div>
     </div>
   `;
 }
@@ -1732,11 +1911,8 @@ function initTradingViewChart(symbolInput) {
           "paneProperties.horzGridProperties.color": "#1a1a1a",
           "scalesProperties.textColor": "#d1d4dc",
           "mainSeriesProperties.candleStyle.upColor": "#00ff66",
-          "mainSeriesProperties.candleStyle.downColor": "#ff3333",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#00ff66",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ff3333"
-        },
-        loading_screen: { backgroundColor: "#000000", foregroundColor: "#ff9900" }
+          "mainSeriesProperties.candleStyle.downColor": "#ff3333"
+        }
       });
       toast('✓ ' + symbol + ' chargé');
     } catch (e) {
@@ -2011,9 +2187,7 @@ function updateAPIStatus(connected, latency = null) {
     textEl.textContent = 'API CONNECTÉE';
     ftApi.textContent = 'CONNECTÉE';
     ftApi.className = 'ok';
-    if (latency !== null) {
-      ftLatency.textContent = latency + 'ms';
-    }
+    if (latency !== null) ftLatency.textContent = latency + 'ms';
   } else {
     statusEl.className = 'api-status offline';
     textEl.textContent = 'MODE HORS-LIGNE';
@@ -2021,6 +2195,140 @@ function updateAPIStatus(connected, latency = null) {
     ftApi.style.color = 'var(--accent)';
     ftLatency.textContent = '--';
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH UI (Phase 2C)
+   ═══════════════════════════════════════════════════════════════ */
+function openAuthModal() {
+  document.getElementById('auth-modal').classList.add('show');
+  document.getElementById('auth-error').classList.remove('show');
+  switchAuthTab('login');
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.remove('show');
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.auth-tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = '✗ ' + msg;
+  el.classList.add('show');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  
+  try {
+    await api.login(username, password);
+    closeAuthModal();
+    updateAuthUI();
+    toast('✓ Connecté en tant que ' + username);
+    await predictionsManager.load();
+    renderPredictions();
+    renderLeaderboard();
+  } catch (error) {
+    showAuthError(error.message);
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  
+  try {
+    await api.register(username, email, password);
+    closeAuthModal();
+    updateAuthUI();
+    toast('✓ Compte créé ! Bienvenue ' + username);
+    await predictionsManager.load();
+    renderPredictions();
+  } catch (error) {
+    showAuthError(error.message);
+  }
+}
+
+function logout() {
+  if (!confirm('Voulez-vous vraiment vous déconnecter ?')) return;
+  api.logout();
+  updateAuthUI();
+  toast('✓ Déconnecté');
+}
+
+function updateAuthUI() {
+  const badge = document.getElementById('user-badge');
+  const loginBtn = document.getElementById('login-btn');
+  const ftUser = document.getElementById('ft-user');
+  
+  if (api.isAuthenticated()) {
+    badge.style.display = 'flex';
+    loginBtn.style.display = 'none';
+    
+    const initial = api.user.username.charAt(0).toUpperCase();
+    document.getElementById('user-avatar').textContent = initial;
+    document.getElementById('user-username').textContent = api.user.username;
+    
+    document.getElementById('menu-name').textContent = api.user.username;
+    document.getElementById('menu-email').textContent = api.user.email;
+    document.getElementById('menu-role').textContent = api.user.role.toUpperCase();
+    
+    if (ftUser) {
+      ftUser.textContent = api.user.username.toUpperCase();
+      ftUser.className = 'ok';
+    }
+  } else {
+    badge.style.display = 'none';
+    loginBtn.style.display = 'block';
+    if (ftUser) {
+      ftUser.textContent = 'ANONYME';
+      ftUser.className = 'w';
+    }
+  }
+}
+
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('user-menu');
+  menu.classList.toggle('show');
+}
+
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const wrapper = document.getElementById('user-wrapper');
+  if (menu && wrapper && !wrapper.contains(e.target)) {
+    menu.classList.remove('show');
+  }
+});
+
+function showProfile() {
+  document.getElementById('user-menu').classList.remove('show');
+  toast('👤 Profil (à venir)');
+}
+
+function showAPIKeys() {
+  document.getElementById('user-menu').classList.remove('show');
+  toast('🔑 API Keys (à venir)');
+}
+
+function openSettings() {
+  document.getElementById('user-menu').classList.remove('show');
+  document.getElementById('settings-modal').classList.add('show');
+}
+
+function onAuthChange() {
+  updateAuthUI();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2288,9 +2596,8 @@ setInterval(() => {
 }, 1000);
 
 document.getElementById('refresh-btn').onclick = async () => {
-  // Rafraîchir depuis l'API si possible
   const apiOk = await market.loadTickers();
-  market.refreshPrices(); // Simulation locale en plus
+  market.refreshPrices();
   window.STOCKS = market.stocks;
   renderWatchlist();
   renderTickerDetail();
@@ -2298,12 +2605,11 @@ document.getElementById('refresh-btn').onclick = async () => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   INITIALISATION ASYNCHRONE (connectée au backend)
+   INITIALISATION
    ═══════════════════════════════════════════════════════════════ */
 window.onload = async () => {
   console.log('[BRVM Terminal] Initialisation...');
 
-  // 1. Vérifier la connexion au backend
   const startTime = performance.now();
   const backendOk = await api.healthCheck();
   const latency = Math.round(performance.now() - startTime);
@@ -2316,23 +2622,19 @@ window.onload = async () => {
     console.warn('[BRVM Terminal] ⚠ Backend indisponible, mode hors-ligne');
   }
 
-  // 2. Charger les données marché (API ou fallback)
   await market.loadTickers();
   window.STOCKS = market.stocks;
   console.log(`[Market] ✓ ${market.stocks.length} tickers chargés`);
 
-  // 3. Charger les prédictions (API ou localStorage)
   await predictionsManager.load();
   window.PREDICTIONS = predictionsManager.getAll();
   console.log(`[Predictions] ✓ ${predictionsManager.getAll().length} prédictions`);
 
-  // 4. Configuration initiale
   loadState();
   setTheme(currentTheme);
   setChartType(chartType);
   document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
 
-  // 5. Rendu initial
   renderWatchlist();
   renderTickerDetail();
   renderNews();
@@ -2342,18 +2644,19 @@ window.onload = async () => {
   initMonacoEditor();
   loadSavedModels();
 
-  // 6. Démarrer le scoring engine
   scoringEngine.start();
   renderLeaderboard();
 
-  // 7. Rafraîchissement périodique des données marché
+  // Initialiser l'UI d'authentification
+  updateAuthUI();
+
   setInterval(async () => {
     if (api.isConnected) {
       await market.loadTickers();
       window.STOCKS = market.stocks;
       renderWatchlist();
     }
-  }, 60000); // Toutes les minutes
+  }, 60000);
 
   console.log('[BRVM Terminal] ✓ Initialisation terminée');
 };
