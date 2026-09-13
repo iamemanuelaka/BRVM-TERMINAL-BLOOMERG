@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRVM TERMINAL · Phase 2B</title>
+<title>BRVM TERMINAL · Phase 2B · Connected</title>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     LIBRAIRIES EXTERNES
-     ═══════════════════════════════════════════════════════════════ -->
+<!-- LIBRAIRIES EXTERNES -->
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 <link href="https://cdn.jsdelivr.net/fontsource/css/jetbrains-mono@latest/index.css" rel="stylesheet">
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
 
-<!-- [A] Note : scoring.js et leaderboard.js sont intégrés inline en bas du fichier -->
+<!-- SCRIPTS MODULES (Option A - Connexion Backend) -->
+<script src="js/api.js"></script>
+<script src="js/market.js"></script>
+<script src="js/predictions.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/leaderboard.js"></script>
 
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   THÈMES
-   ═══════════════════════════════════════════════════════════════ */
 :root, [data-theme="dark"] {
   --bg: #000000; --panel: #0a0a0a; --panel-2: #111111; --panel-3: #181818;
   --border: #222222; --border-2: #333333; --text: #d1d4dc; --muted: #888888;
@@ -58,7 +58,6 @@ html, body {
 
 .app { display: flex; flex-direction: column; height: 100vh; }
 
-/* HEADER */
 .header {
   background: var(--panel-2); border-bottom: 1px solid var(--border-2);
   padding: 6px 12px; display: flex; align-items: center; gap: 16px;
@@ -81,6 +80,7 @@ html, body {
 .idx-up { color: var(--up); }
 .status { color: var(--muted); }
 .open { color: var(--up); font-weight: bold; }
+.offline { color: var(--down); font-weight: bold; }
 .settings-btn {
   background: var(--panel-3); border: 1px solid var(--border-2);
   color: var(--text); padding: 4px 8px; cursor: pointer; font-size: 14px;
@@ -88,7 +88,6 @@ html, body {
 }
 .settings-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
-/* F-KEYS */
 .fkeys {
   background: var(--panel); border-bottom: 1px solid var(--border);
   display: flex; padding: 4px; gap: 3px; font-size: 10px;
@@ -105,7 +104,6 @@ html, body {
 .fkey.active { background: var(--accent); color: #000; border-color: var(--accent); }
 .fkey .fn { font-size: 8px; opacity: 0.75; margin-right: 2px; }
 
-/* MAIN GRID */
 .main {
   flex: 1; display: grid;
   grid-template-columns: 3fr 6fr 3fr;
@@ -116,7 +114,6 @@ html, body {
 .main.fs { grid-template-columns: 1fr; }
 .main.fs .sidebar-left, .main.fs .sidebar-right { display: none; }
 
-/* PANELS */
 .panel {
   background: var(--panel); border: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
@@ -131,7 +128,6 @@ html, body {
 .panel-head.muted { color: var(--muted); }
 .panel-body { flex: 1; overflow-y: auto; padding: 4px; }
 
-/* WATCHLIST */
 table.watch { width: 100%; border-collapse: collapse; }
 table.watch th {
   position: sticky; top: 0; background: var(--panel);
@@ -148,7 +144,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .down { color: var(--down); }
 .flat { color: var(--muted); }
 
-/* TICKER DETAIL */
 .ticker-head {
   padding: 8px; display: flex; justify-content: space-between;
   align-items: flex-start; border-bottom: 1px solid var(--border);
@@ -166,7 +161,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .stats .val { color: var(--text); }
 .stats .val.cyan { color: var(--cyan); }
 
-/* CHARTS */
 .chart-wrap { flex: 1; display: flex; flex-direction: column; padding: 6px; }
 .chart-toolbar {
   display: flex; justify-content: space-between; align-items: center;
@@ -181,7 +175,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   background: var(--chart-bg); border: 1px solid var(--chart-grid);
 }
 
-/* FORMS */
 .form-row { margin-bottom: 6px; }
 .form-row label {
   display: block; color: var(--dim);
@@ -206,7 +199,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .btn-sm { width: auto; padding: 3px 10px; font-size: 10px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
-/* FOOTER */
 .footer {
   background: var(--panel-2); border-top: 1px solid var(--border-2);
   padding: 2px 12px; display: flex; justify-content: space-between;
@@ -215,11 +207,9 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .footer .ok { color: var(--up); font-weight: bold; }
 .footer .w { color: var(--text); font-weight: bold; }
 
-/* VIEWS */
 .view { display: none; }
 .view.active { display: contents; }
 
-/* SUB-TABS */
 .subtabs {
   display: flex; background: var(--panel-2);
   border-bottom: 1px solid var(--border-2);
@@ -240,7 +230,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .pane { display: none; flex: 1; overflow: hidden; }
 .pane.active { display: flex; flex-direction: column; }
 
-/* MODAL */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.8);
@@ -267,7 +256,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .theme-btn:hover, .chart-btn:hover { border-color: var(--accent); }
 .theme-btn.active, .chart-btn.active { border-color: var(--accent); background: var(--panel-3); }
 
-/* TABLES */
 .trade-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
 .trade-tbl th {
   background: var(--panel-3); color: var(--accent);
@@ -280,7 +268,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .pnl-pos { color: var(--up); font-weight: bold; }
 .pnl-neg { color: var(--down); font-weight: bold; }
 
-/* PORTFOLIO CARDS */
 .port-sum {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 10px; padding: 10px;
@@ -291,7 +278,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .pcard .vl { color: var(--accent); font-size: 16px; font-weight: bold; }
 .pcard .sb { color: var(--muted); font-size: 9px; margin-top: 2px; }
 
-/* PREDICTION CARDS */
 .pred-card {
   background: var(--panel-2); border: 1px solid var(--border);
   padding: 6px; margin-bottom: 6px; font-size: 11px;
@@ -304,7 +290,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   color: var(--muted); font-size: 10px; margin-top: 4px;
 }
 
-/* NEWS */
 .news-item {
   padding: 4px 0 4px 8px;
   border-left: 2px solid var(--border-2);
@@ -315,7 +300,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .news-item .tag { color: var(--text); font-weight: 600; }
 .news-item .txt { color: var(--muted); }
 
-/* PYTHON EDITOR */
 .py-wrap { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; overflow: hidden; }
 .py-panel {
   display: flex; flex-direction: column;
@@ -353,7 +337,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 #python-console .out-line.info { color: var(--cyan); }
 #python-console .out-line.warning { color: var(--accent); }
 
-/* ANALYST */
 .analyst-layout { display: grid; grid-template-columns: 320px 1fr; height: 100%; gap: 4px; }
 .analyst-card {
   background: var(--panel-2); border: 1px solid var(--border);
@@ -419,9 +402,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 }
 #tradingview_analyst_chart { flex: 1; width: 100%; min-height: 400px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   [C] LEADERBOARD BUTTONS (PHASE 2B)
-   ═══════════════════════════════════════════════════════════════ */
 .lb-period-btn, .lb-sort-btn {
   background: var(--panel-3); color: var(--muted);
   border: 1px solid var(--border-2); padding: 4px 10px;
@@ -434,7 +414,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   border-color: var(--accent); font-weight: bold;
 }
 
-/* PODIUM */
 .podium-card {
   background: var(--panel-2); padding: 12px;
   text-align: center; position: relative;
@@ -450,14 +429,12 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .podium-medal.silver { background: var(--silver); }
 .podium-medal.bronze { background: var(--bronze); }
 
-/* BADGES */
 .badge-icon {
   cursor: help; font-size: 14px;
   transition: transform 0.15s; display: inline-block;
 }
 .badge-icon:hover { transform: scale(1.3); }
 
-/* TOAST & LOADING */
 .toast {
   position: fixed; bottom: 30px; right: 20px;
   background: var(--accent); color: #000;
@@ -483,6 +460,37 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   margin-bottom: 16px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Indicateur de connexion API */
+.api-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+}
+.api-status.connected {
+  background: rgba(0, 255, 102, 0.1);
+  color: var(--up);
+  border: 1px solid var(--up);
+}
+.api-status.offline {
+  background: rgba(255, 153, 0, 0.1);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.api-status .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
 </style>
 </head>
 <body>
@@ -500,6 +508,10 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
       <div>BRVM-C: <span class="idx-up">215.18 (+0.12%)</span></div>
       <div class="status">MARCHÉ: <span class="open">OUVERT</span></div>
       <div class="status" id="clock">--:--:--</div>
+      <span class="api-status offline" id="api-status">
+        <span class="dot"></span>
+        <span id="api-status-text">CONNEXION...</span>
+      </span>
       <button class="settings-btn" id="settings-btn" title="Paramètres">⚙</button>
     </div>
   </div>
@@ -523,12 +535,14 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
     <div class="panel sidebar-left">
       <div class="panel-head">
         <span>WATCHLIST BRVM</span>
-        <span style="cursor:pointer" id="refresh-btn">⟳</span>
+        <span style="cursor:pointer" id="refresh-btn" title="Rafraîchir">⟳</span>
       </div>
       <div class="panel-body" style="padding:0">
         <table class="watch">
           <thead><tr><th>TICKER</th><th class="r">DERNIER</th><th class="r">VAR%</th></tr></thead>
-          <tbody id="wl-body"></tbody>
+          <tbody id="wl-body">
+            <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Chargement...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -596,29 +610,19 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
             <div style="color:var(--dim);font-size:10px">VALEUR PROJETÉE</div>
             <div style="color:var(--accent);font-size:20px;font-weight:bold;margin-top:4px" id="calc-out">—</div>
           </div>
-          <div style="color:var(--dim);font-size:9px;margin-top:8px;text-align:center">
-            ⚠ Simulation basée sur une hypothèse de rendement constant. Ne constitue pas un conseil en investissement.
-          </div>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         [C] F4 QUANT — PRÉDICTIONS + PYTHON + LEADERBOARD
-         ═══════════════════════════════════════════════════════════ -->
+    <!-- F4 QUANT -->
     <div class="view" id="view-quant">
       <div class="panel" style="display:flex;flex-direction:column">
-        
-        <!-- [C] Sous-onglets QUANT avec LEADERBOARD -->
         <div class="subtabs">
           <button class="subtab active" data-pane="manual"><span class="ic">📝</span>PRÉDICTIONS</button>
           <button class="subtab" data-pane="python"><span class="ic">🐍</span>PYTHON</button>
-          <button class="subtab" data-pane="leaderboard"><span class="ic">🏆</span>LEADERBOARD & SCORES</button>
+          <button class="subtab" data-pane="leaderboard"><span class="ic">🏆</span>LEADERBOARD</button>
         </div>
-
         <div class="content">
-
-          <!-- Pane : Prédictions manuelles -->
           <div class="pane active" id="qp-manual">
             <div class="panel-body" style="padding:10px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -662,7 +666,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
             </div>
           </div>
 
-          <!-- Pane : Python Editor -->
           <div class="pane" id="qp-python">
             <div class="py-wrap">
               <div class="py-panel">
@@ -695,35 +698,21 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
             </div>
           </div>
 
-          <!-- ═══════════════════════════════════════════════════════
-               [D-E] Pane : LEADERBOARD & SCORES (PHASE 2B)
-               ═══════════════════════════════════════════════════════ -->
           <div class="pane" id="qp-leaderboard">
             <div class="panel" style="display:flex;flex-direction:column;flex:1">
-              
-              <!-- [F] Panel-head avec bouton RAFRAÎCHIR -->
               <div class="panel-head">
                 <span>🏆 CLASSEMENT DES TRADERS & MODÈLES</span>
-                <button class="btn btn-sm" onclick="renderLeaderboard()" style="width:auto;padding:3px 10px">
-                  🔄 RAFRAÎCHIR
-                </button>
+                <button class="btn btn-sm" onclick="renderLeaderboard()" style="width:auto;padding:3px 10px">🔄 RAFRAÎCHIR</button>
               </div>
-
               <div class="panel-body" style="padding:12px;overflow-y:auto">
-
-                <!-- Barre de contrôle -->
                 <div style="margin-bottom:12px">
                   <div style="color:var(--muted);font-size:10px;margin-bottom:8px">
                     Score composite : Précision (40%) · P&L (25%) · Calibration (20%) · Profit Factor (15%)
                   </div>
-                  <div style="display:flex;gap:8px;margin-bottom:8px">
-                    <button class="btn btn-sm" onclick="scoringEngine.forceScore()" style="width:auto;padding:6px 12px;background:var(--up)">
-                      ⚡ FORCER LE SCORING
-                    </button>
-                  </div>
+                  <button class="btn btn-sm" onclick="scoringEngine.forceScore()" style="width:auto;padding:6px 12px;background:var(--up)">
+                    ⚡ FORCER LE SCORING
+                  </button>
                 </div>
-
-                <!-- Filtres -->
                 <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap">
                   <div>
                     <div style="color:var(--dim);font-size:9px;margin-bottom:4px;text-transform:uppercase">Période</div>
@@ -746,29 +735,23 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
                     </div>
                   </div>
                 </div>
-
-                <!-- [D-E] Conteneur leaderboard -->
                 <div id="leaderboard-container"></div>
-
-                <!-- Légende des badges -->
                 <div style="margin-top:20px;padding:12px;background:var(--panel-2);border:1px solid var(--border-2)">
                   <h4 style="color:var(--cyan);font-size:11px;margin-bottom:8px">🏅 LÉGENDE DES BADGES</h4>
                   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;font-size:10px">
-                    <div>🎯 <b style="color:var(--accent)">SNIPER</b> — Précision &gt; 80% (min 5 préds)</div>
-                    <div>🐋 <b style="color:var(--accent)">WHALE</b> — P&L total &gt; 50%</div>
-                    <div>🏛️ <b style="color:var(--accent)">VÉTÉRAN</b> — 20+ prédictions scorées</div>
-                    <div>💎 <b style="color:var(--accent)">DIAMANT</b> — Profit Factor &gt; 2</div>
-                    <div>🧘 <b style="color:var(--accent)">ZEN</b> — Confiance bien calibrée</div>
-                    <div>🌍 <b style="color:var(--accent)">DIVERSIFIÉ</b> — 5+ tickers différents</div>
+                    <div>🎯 <b style="color:var(--accent)">SNIPER</b> — Précision &gt; 80%</div>
+                    <div>🐋 <b style="color:var(--accent)">WHALE</b> — P&L &gt; 50%</div>
+                    <div>🏛️ <b style="color:var(--accent)">VÉTÉRAN</b> — 20+ prédictions</div>
+                    <div>💎 <b style="color:var(--accent)">DIAMANT</b> — PF &gt; 2</div>
+                    <div>🧘 <b style="color:var(--accent)">ZEN</b> — Confiance calibrée</div>
+                    <div>🌍 <b style="color:var(--accent)">DIVERSIFIÉ</b> — 5+ tickers</div>
                     <div>🛡️ <b style="color:var(--accent)">RISK-MGR</b> — Perte max &lt; 10%</div>
-                    <div>👑 <b style="color:var(--accent)">LÉGENDE</b> — Précision &gt; 90% (min 10 préds)</div>
+                    <div>👑 <b style="color:var(--accent)">LÉGENDE</b> — Précision &gt; 90%</div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -917,12 +900,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
                 <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">DÉTAILS PAR TICKER</h4>
                 <div id="st-by-ticker"></div>
               </div>
-              <div style="margin-top:16px;color:var(--muted);font-size:10px">
-                <p><strong>Formules utilisées :</strong></p>
-                <p style="margin-top:4px">• P&L = (Prix vente - Prix moyen achat) × Quantité - Frais</p>
-                <p>• Win Rate = Nombre de trades gagnants / Nombre total de trades</p>
-                <p>• Profit Factor = Moyenne des gains / Moyenne des pertes</p>
-              </div>
             </div>
           </div>
         </div>
@@ -1006,7 +983,7 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
                   </div>
                   <div class="form-grid">
                     <div class="form-row"><label>Date début</label><input type="date" id="bt-start" value="2025-01-01"></div>
-                    <div class="form-row"><label>Date fin</label><input type="date" id="bt-end" value="2026-09-13"></div>
+                    <div class="form-row"><label>Date fin</label><input type="date" id="bt-end" value="2026-09-14"></div>
                   </div>
                   <div class="form-row"><label>Capital initial (FCFA)</label><input type="number" id="bt-cap" value="10000000"></div>
                   <div class="form-row"><label>Frais par trade (%)</label><input type="number" id="bt-fees" value="0.5" step="0.1"></div>
@@ -1043,14 +1020,13 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   <!-- FOOTER -->
   <div class="footer">
     <div>
-      API: <span class="ok">OK</span> ·
-      LATENCE: <span class="w">24ms</span> ·
+      API: <span id="ft-api" class="w">VÉRIFICATION...</span> ·
+      LATENCE: <span class="w" id="ft-latency">--ms</span> ·
       WS: <span class="ok">ACTIF</span> ·
       DB: <span class="ok">OK</span> ·
-      THÈME: <span class="w" id="ft-theme">SOMBRE</span> ·
-      <span style="color:var(--accent)" id="ft-scoring">⚡ SCORING: ACTIF</span>
+      THÈME: <span class="w" id="ft-theme">SOMBRE</span>
     </div>
-    <div>BRVM TERMINAL v2.1 · PHASE 2B</div>
+    <div>BRVM TERMINAL v3.0 · PHASE 2B CONNECTED</div>
   </div>
 
 </div>
@@ -1096,37 +1072,19 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 
 <div class="toast" id="toast"></div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     [A-B] SCRIPTS INTÉGRÉS : scoring.js + leaderboard.js + logique principale
-     ═══════════════════════════════════════════════════════════════ -->
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   DONNÉES BRVM
+   DONNÉES GLOBALES & ÉTAT
    ═══════════════════════════════════════════════════════════════ */
-const STOCKS = [
-  { ticker: 'SNTS', name: 'SONATEL SENEGAL', price: 17500, change: 1.45, volume: 14250, high: 17600, low: 17300, per: '14.2x', cap: 2845, sector: 'Télécom', country: 'SN', beta: 0.87 },
-  { ticker: 'ETIT', name: 'ECOBANK TRANS. INC.', price: 19, change: -5.00, volume: 850000, high: 20, low: 18, per: '5.1x', cap: 1250, sector: 'Banque', country: 'TG', beta: 1.15 },
-  { ticker: 'SIBC', name: 'SOCIETE IVOIRIENNE DE BANQUE', price: 5400, change: 0.00, volume: 3200, high: 5400, low: 5350, per: '8.7x', cap: 320, sector: 'Banque', country: 'CI', beta: 0.95 },
-  { ticker: 'BOAB', name: 'BANK OF AFRICA BF', price: 7100, change: 2.16, volume: 11200, high: 7150, low: 6950, per: '7.3x', cap: 410, sector: 'Banque', country: 'BF', beta: 0.92 },
-  { ticker: 'PALC', name: 'PALM CI', price: 6800, change: -0.73, volume: 4500, high: 6900, low: 6750, per: '11.0x', cap: 520, sector: 'Agro-industrie', country: 'CI', beta: 0.78 },
-  { ticker: 'SAFC', name: 'SAFCA CI', price: 215, change: 0.94, volume: 8900, high: 218, low: 212, per: '6.8x', cap: 180, sector: 'Finance', country: 'CI', beta: 1.05 },
-  { ticker: 'SGBC', name: 'SG CI', price: 18500, change: 0.54, volume: 2100, high: 18600, low: 18350, per: '9.5x', cap: 680, sector: 'Banque', country: 'CI', beta: 0.88 },
-  { ticker: 'ORAC', name: 'ORANGE CI', price: 2500, change: 1.21, volume: 15600, high: 2520, low: 2470, per: '12.1x', cap: 1450, sector: 'Télécom', country: 'CI', beta: 0.82 },
-  { ticker: 'TTLC', name: 'TOTAL CI', price: 2400, change: -0.42, volume: 3400, high: 2420, low: 2380, per: '8.2x', cap: 290, sector: 'Distribution', country: 'CI', beta: 0.95 },
-  { ticker: 'SLBC', name: 'SOLEIL CI', price: 850, change: 2.41, volume: 12000, high: 860, low: 830, per: '10.5x', cap: 125, sector: 'Agro-industrie', country: 'CI', beta: 0.72 },
-  { ticker: 'NSBC', name: 'NESTLE CI', price: 4200, change: 0.24, volume: 1800, high: 4220, low: 4180, per: '15.3x', cap: 210, sector: 'Agro-industrie', country: 'CI', beta: 0.65 },
-  { ticker: 'CIEC', name: 'CIE CI', price: 225, change: -1.32, volume: 25000, high: 228, low: 222, per: '7.9x', cap: 340, sector: 'Utilities', country: 'CI', beta: 0.55 },
-];
-
 const NEWS = [
   { time: '11:24', tag: 'SONATEL', txt: 'Publication des résultats semestriels en hausse de 8.2%. Dividende proposé: 1200 XOF/action.', hot: true },
   { time: '10:05', tag: 'BCEAO', txt: 'Maintien du taux directeur à 3.50%. Inflation zone UEMOA: 3.2% en glissement annuel.', hot: true },
-  { time: '09:30', tag: 'BRVM', txt: 'Recomposition de l\'indice BRVM-30 annoncée pour le T4. 3 valeurs pourraient intégrer l\'indice.', hot: false },
+  { time: '09:30', tag: 'BRVM', txt: 'Recomposition de l\'indice BRVM-30 annoncée pour le T4.', hot: false },
   { time: '08:45', tag: 'ECOBANK', txt: 'ETIT annonce un partenariat stratégique avec une fintech panafricaine.', hot: false },
-  { time: '08:15', tag: 'PALM CI', txt: 'Production d\'huile de palme en hausse de 12% au S1 2026. Perspectives positives.', hot: false },
+  { time: '08:15', tag: 'PALM CI', txt: 'Production d\'huile de palme en hausse de 12% au S1 2026.', hot: false },
   { time: '07:30', tag: 'BCEAO', txt: 'Croissance économique zone UEMOA révisée à 6.2% pour 2026.', hot: false },
-  { time: 'Veille', tag: 'ORANGE CI', txt: 'Lancement de la 5G à Abidjan. CA mobile data +18% sur le trimestre.', hot: false },
-  { time: 'Veille', tag: 'BOA BF', txt: 'Résultats trimestriels solides. PNB en hausse de 14% sur un an.', hot: false },
+  { time: 'Veille', tag: 'ORANGE CI', txt: 'Lancement de la 5G à Abidjan. CA mobile data +18%.', hot: false },
+  { time: 'Veille', tag: 'BOA BF', txt: 'Résultats trimestriels solides. PNB en hausse de 14%.', hot: false },
 ];
 
 const TV_SYMBOL_MAP = {
@@ -1137,26 +1095,25 @@ const TV_SYMBOL_MAP = {
 };
 const TV_FALLBACK = 'BINANCE:BTCUSDT';
 
-/* ═══════════════════════════════════════════════════════════════
-   ÉTAT GLOBAL
-   ═══════════════════════════════════════════════════════════════ */
 let selectedTicker = 'SNTS';
 let chart = null, chartBig = null;
 let chartType = 'candle';
 let currentTheme = 'dark';
-let PREDICTIONS = [];
 let TRADES = [];
 let tvWidget = null;
 let monacoEditor = null;
 let pyodide = null;
 let pyodideReady = false;
 
+// Variables globales pour compatibilité avec scoring.js et leaderboard.js
+window.STOCKS = [];
+window.PREDICTIONS = [];
+
 /* ═══════════════════════════════════════════════════════════════
-   PERSISTANCE LOCALSTORAGE
+   PERSISTANCE LOCALSTORAGE (pour trades et préférences)
    ═══════════════════════════════════════════════════════════════ */
 function saveState() {
   try {
-    localStorage.setItem('brvm_preds', JSON.stringify(PREDICTIONS));
     localStorage.setItem('brvm_trades', JSON.stringify(TRADES));
     localStorage.setItem('brvm_theme', currentTheme);
     localStorage.setItem('brvm_chart_type', chartType);
@@ -1165,8 +1122,6 @@ function saveState() {
 
 function loadState() {
   try {
-    const p = localStorage.getItem('brvm_preds');
-    if (p) PREDICTIONS = JSON.parse(p);
     const t = localStorage.getItem('brvm_trades');
     if (t) TRADES = JSON.parse(t);
     const th = localStorage.getItem('brvm_theme');
@@ -1205,7 +1160,7 @@ function css(v) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GÉNÉRATION OHLCV
+   GÉNÉRATION OHLCV (fallback local)
    ═══════════════════════════════════════════════════════════════ */
 function generateOHLCV(basePrice, days = 365) {
   const data = [];
@@ -1248,11 +1203,20 @@ function makeChart(containerId) {
   });
 }
 
-function buildChart(containerId, type) {
+async function buildChart(containerId, type) {
   const c = makeChart(containerId);
   if (!c) return null;
-  const s = STOCKS.find(x => x.ticker === selectedTicker);
-  const data = generateOHLCV(s.price, type === 'main' ? 365 : 730);
+  const s = market.stocks.find(x => x.ticker === selectedTicker) || market.stocks[0];
+  
+  // Essayer de charger depuis l'API, sinon fallback local
+  let data;
+  try {
+    data = await market.loadOHLCV(s.ticker, type === 'main' ? 365 : 730);
+    if (!data || data.length === 0) throw new Error('No data');
+  } catch (e) {
+    data = generateOHLCV(s.price, type === 'main' ? 365 : 730);
+  }
+  
   const up = css('--up'), dn = css('--down'), cy = css('--cyan');
 
   if (chartType === 'candle' || chartType === 'both') {
@@ -1276,11 +1240,11 @@ function buildChart(containerId, type) {
   return c;
 }
 
-function rebuildCharts() {
+async function rebuildCharts() {
   if (chart) { chart.remove(); chart = null; }
   if (chartBig) { chartBig.remove(); chartBig = null; }
-  chart = buildChart('chart-container', 'main');
-  chartBig = buildChart('chart-big', 'big');
+  chart = await buildChart('chart-container', 'main');
+  chartBig = await buildChart('chart-big', 'big');
   if (chartBig) document.getElementById('chart-sym').textContent = selectedTicker;
 }
 
@@ -1289,38 +1253,42 @@ function rebuildCharts() {
    ═══════════════════════════════════════════════════════════════ */
 function renderWatchlist() {
   const body = document.getElementById('wl-body');
-  body.innerHTML = STOCKS.map(s => `
+  const stocks = market.stocks;
+  
+  if (!stocks || stocks.length === 0) {
+    body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Aucune donnée</td></tr>';
+    return;
+  }
+  
+  body.innerHTML = stocks.map(s => `
     <tr data-t="${s.ticker}" class="${s.ticker === selectedTicker ? 'sel' : ''}">
       <td class="ticker">${s.ticker}</td>
-      <td style="text-align:right;color:var(--text)">${s.price.toLocaleString('fr-FR')}</td>
-      <td style="text-align:right;font-weight:bold" class="${s.change > 0 ? 'up' : s.change < 0 ? 'down' : 'flat'}">
-        ${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%
+      <td style="text-align:right;color:var(--text)">${(s.price || 0).toLocaleString('fr-FR')}</td>
+      <td style="text-align:right;font-weight:bold" class="${(s.change || 0) > 0 ? 'up' : (s.change || 0) < 0 ? 'down' : 'flat'}">
+        ${(s.change || 0) > 0 ? '+' : ''}${(s.change || 0).toFixed(2)}%
       </td>
     </tr>
   `).join('');
+  
   body.querySelectorAll('tr').forEach(tr => {
-    tr.onclick = () => {
-      selectedTicker = tr.dataset.t;
-      renderWatchlist();
-      renderTickerDetail();
-      rebuildCharts();
-    };
+    tr.onclick = () => market.selectTicker(tr.dataset.t);
   });
 }
 
 function renderTickerDetail() {
-  const s = STOCKS.find(x => x.ticker === selectedTicker);
+  const s = market.getSelected();
+  if (!s) return;
   document.getElementById('t-ticker').textContent = s.ticker + ' GP';
   document.getElementById('t-name').textContent = s.name;
-  document.getElementById('t-price').textContent = s.price.toLocaleString('fr-FR') + ' XOF';
+  document.getElementById('t-price').textContent = (s.price || 0).toLocaleString('fr-FR') + ' XOF';
   const ch = document.getElementById('t-change');
-  ch.textContent = (s.change >= 0 ? '+' : '') + s.change.toFixed(2) + '%';
-  ch.className = s.change >= 0 ? 'up' : 'down';
+  ch.textContent = ((s.change || 0) >= 0 ? '+' : '') + (s.change || 0).toFixed(2) + '%';
+  ch.className = (s.change || 0) >= 0 ? 'up' : 'down';
   ch.style.cssText = 'font-size:11px;font-weight:bold;text-align:right';
-  document.getElementById('t-high').textContent = s.high.toLocaleString('fr-FR');
-  document.getElementById('t-low').textContent = s.low.toLocaleString('fr-FR');
-  document.getElementById('t-vol').textContent = s.volume.toLocaleString('fr-FR');
-  document.getElementById('t-per').textContent = s.per;
+  document.getElementById('t-high').textContent = (s.high || 0).toLocaleString('fr-FR');
+  document.getElementById('t-low').textContent = (s.low || 0).toLocaleString('fr-FR');
+  document.getElementById('t-vol').textContent = (s.volume || 0).toLocaleString('fr-FR');
+  document.getElementById('t-per').textContent = s.per || '10.0x';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1344,10 +1312,13 @@ function renderNews() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PREDICTIONS (avec statut HIT/MISS)
+   PREDICTIONS (utilise predictionsManager)
    ═══════════════════════════════════════════════════════════════ */
 function renderPredictions() {
-  document.getElementById('pred-count').textContent = `(${PREDICTIONS.length})`;
+  const preds = predictionsManager.getAll();
+  window.PREDICTIONS = preds; // Sync pour scoring/leaderboard
+  document.getElementById('pred-count').textContent = `(${preds.length})`;
+  
   const card = p => {
     const statusColors = {
       active: 'var(--accent)',
@@ -1384,10 +1355,6 @@ function renderPredictions() {
               <span style="color:var(--dim)">P&L:</span>
               <strong class="${(p.pnlPct || 0) >= 0 ? 'pnl-pos' : 'pnl-neg'}">${(p.pnlPct || 0) >= 0 ? '+' : ''}${(p.pnlPct || 0).toFixed(2)}%</strong>
             </div>
-            <div style="display:flex;justify-content:space-between">
-              <span style="color:var(--dim)">Écart cible:</span>
-              <span style="color:var(--muted)">${(p.pctError || 0).toFixed(2)}%</span>
-            </div>
           </div>
         ` : `
           ${p.thesis ? `<div style="color:var(--muted);font-size:10px;margin-top:4px;font-style:italic">${p.thesis}</div>` : ''}
@@ -1395,8 +1362,11 @@ function renderPredictions() {
       </div>
     `;
   };
-  document.getElementById('pred-sb').innerHTML = PREDICTIONS.slice(0, 3).map(card).join('') || '<p style="color:var(--muted);text-align:center;padding:10px;font-size:10px">Aucune prédiction</p>';
-  document.getElementById('pred-list').innerHTML = PREDICTIONS.length ? PREDICTIONS.map(card).join('') : '<p style="color:var(--muted);text-align:center;padding:20px">Aucune prédiction enregistrée.</p>';
+  
+  document.getElementById('pred-sb').innerHTML = preds.slice(0, 3).map(card).join('') 
+    || '<p style="color:var(--muted);text-align:center;padding:10px;font-size:10px">Aucune prédiction</p>';
+  document.getElementById('pred-list').innerHTML = preds.length ? preds.map(card).join('') 
+    : '<p style="color:var(--muted);text-align:center;padding:20px">Aucune prédiction enregistrée.</p>';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1491,7 +1461,7 @@ function updatePortfolio() {
   Object.keys(positions).forEach(tk => {
     const pos = positions[tk];
     if (pos.qty > 0) {
-      const st = STOCKS.find(x => x.ticker === tk);
+      const st = market.stocks.find(x => x.ticker === tk);
       const currentPrice = st ? st.price : pos.cost / pos.qty;
       const currentValue = pos.qty * currentPrice;
       const pnl = currentValue - pos.cost;
@@ -1502,7 +1472,7 @@ function updatePortfolio() {
         currentValue, pnl, pnlPct: pos.cost > 0 ? (pnl / pos.cost * 100) : 0,
         sector: st ? st.sector : 'Autre', beta: st ? st.beta : 1
       });
-      if (st) {
+      if (st && st.sector) {
         if (!sectorMap[st.sector]) sectorMap[st.sector] = 0;
         sectorMap[st.sector] += currentValue;
       }
@@ -1585,7 +1555,7 @@ function runScenario() {
   Object.keys(positions).forEach(tk => {
     const pos = positions[tk];
     if (pos.qty > 0) {
-      const st = STOCKS.find(x => x.ticker === tk);
+      const st = market.stocks.find(x => x.ticker === tk);
       const price = st ? st.price : pos.cost / pos.qty;
       const beta = st ? st.beta : 1;
       currentValue += pos.qty * price * (1 + shock * beta);
@@ -1611,8 +1581,8 @@ function runBacktest() {
   const strategy = document.getElementById('bt-strat').value;
   const ticker = document.getElementById('bt-tick').value;
   const feesPct = parseFloat(document.getElementById('bt-fees').value) / 100;
-  const st = STOCKS.find(x => x.ticker === ticker);
-  const data = generateOHLCV(st.price, 365);
+  const st = market.stocks.find(x => x.ticker === ticker);
+  const data = generateOHLCV(st ? st.price : 5000, 365);
   const closes = data.map(d => d.close);
 
   let cash = capital, shares = 0, trades = 0, wins = 0;
@@ -1690,39 +1660,40 @@ function runBacktest() {
    ANALYST
    ═══════════════════════════════════════════════════════════════ */
 function renderAnalyst() {
-  const s = STOCKS.find(x => x.ticker === selectedTicker);
+  const s = market.getSelected();
+  if (!s) return;
   document.getElementById('a-title').textContent = s.ticker + ' GP · ' + s.name;
   document.getElementById('a-fund').innerHTML = `
     <div class="analyst-card">
       <h4>MÉTRIQUES CLÉS</h4>
-      <div class="metric"><span class="k">Capitalisation</span><span class="v">${s.cap} Mds FCFA</span></div>
-      <div class="metric"><span class="k">PER</span><span class="v">${s.per}</span></div>
+      <div class="metric"><span class="k">Capitalisation</span><span class="v">${s.cap || 0} Mds FCFA</span></div>
+      <div class="metric"><span class="k">PER</span><span class="v">${s.per || '10.0x'}</span></div>
       <div class="metric"><span class="k">Dividend Yield</span><span class="v" style="color:var(--up)">4.2%</span></div>
       <div class="metric"><span class="k">PBR</span><span class="v">2.8x</span></div>
       <div class="metric"><span class="k">ROE</span><span class="v" style="color:var(--up)">18.5%</span></div>
-      <div class="metric"><span class="k">Secteur</span><span class="v">${s.sector}</span></div>
-      <div class="metric"><span class="k">Pays</span><span class="v">${s.country}</span></div>
+      <div class="metric"><span class="k">Secteur</span><span class="v">${s.sector || 'N/A'}</span></div>
+      <div class="metric"><span class="k">Pays</span><span class="v">${s.country || 'N/A'}</span></div>
     </div>
     <div class="analyst-card">
       <h4>CONSENSUS ANALYSTES</h4>
       <div class="metric"><span class="k">Recommandation</span><span class="v" style="color:var(--up)">ACHAT</span></div>
       <div class="metric"><span class="k">Buy / Hold / Sell</span><span class="v">7 / 3 / 1</span></div>
-      <div class="metric"><span class="k">Prix cible moyen</span><span class="v" style="color:var(--accent)">${(s.price * 1.08).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">Prix cible moyen</span><span class="v" style="color:var(--accent)">${((s.price || 0) * 1.08).toFixed(0)}</span></div>
       <div class="metric"><span class="k">Upside potentiel</span><span class="v" style="color:var(--up)">+8.0%</span></div>
     </div>
     <div class="analyst-card">
       <h4>ANALYSE TECHNIQUE</h4>
       <div class="metric"><span class="k">RSI (14)</span><span class="v" style="color:var(--up)">58.4</span></div>
       <div class="metric"><span class="k">MACD</span><span class="v" style="color:var(--up)">BULLISH</span></div>
-      <div class="metric"><span class="k">SMA 20</span><span class="v">${(s.price * 0.97).toFixed(0)}</span></div>
-      <div class="metric"><span class="k">SMA 50</span><span class="v">${(s.price * 0.93).toFixed(0)}</span></div>
-      <div class="metric"><span class="k">Support</span><span class="v">${s.low.toLocaleString('fr-FR')}</span></div>
-      <div class="metric"><span class="k">Résistance</span><span class="v">${(s.price * 1.05).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">SMA 20</span><span class="v">${((s.price || 0) * 0.97).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">SMA 50</span><span class="v">${((s.price || 0) * 0.93).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">Support</span><span class="v">${(s.low || 0).toLocaleString('fr-FR')}</span></div>
+      <div class="metric"><span class="k">Résistance</span><span class="v">${((s.price || 0) * 1.05).toFixed(0)}</span></div>
     </div>
     <div class="analyst-card">
       <h4>RISQUES & VOLATILITÉ</h4>
       <div class="metric"><span class="k">Volatilité 30j</span><span class="v">14.2%</span></div>
-      <div class="metric"><span class="k">Beta</span><span class="v">${s.beta}</span></div>
+      <div class="metric"><span class="k">Beta</span><span class="v">${s.beta || 1.0}</span></div>
       <div class="metric"><span class="k">Max Drawdown 1A</span><span class="v" style="color:var(--down)">-12.4%</span></div>
       <div class="metric"><span class="k">Sharpe Ratio</span><span class="v" style="color:var(--up)">1.24</span></div>
     </div>
@@ -1779,40 +1750,25 @@ function initTradingViewChart(symbolInput) {
    ═══════════════════════════════════════════════════════════════ */
 const PYTHON_TEMPLATES = {
   sma: `# MODÈLE: Moyenne Mobile Simple (SMA)
-import json
 from brvm_api import get_ohlcv_data, create_prediction
 
 TICKER = "SNTS"
-PERIOD = 20
-HORIZON_DAYS = 14
-CONFIDENCE = 75
-
 data = get_ohlcv_data(TICKER, days=100)
 closes = [d['close'] for d in data]
-
-sma = sum(closes[-PERIOD:]) / PERIOD
+sma = sum(closes[-20:]) / 20
 current_price = closes[-1]
 
-if current_price > sma * 1.02:
-    direction = "LONG"
-    target = current_price * 1.08
-elif current_price < sma * 0.98:
-    direction = "SHORT"
-    target = current_price * 0.92
-else:
-    direction = "LONG"
-    target = current_price * 1.05
+direction = "LONG" if current_price > sma * 1.02 else "SHORT"
+target = current_price * 1.08 if direction == "LONG" else current_price * 0.92
 
-pred = create_prediction(
+create_prediction(
     author="SMA_Model", symbol=TICKER, direction=direction,
-    target_price=target, horizon_days=HORIZON_DAYS,
-    confidence=CONFIDENCE,
-    thesis=f"SMA{PERIOD}: {sma:.2f}, Prix: {current_price:.2f}"
+    target_price=target, horizon_days=14, confidence=75,
+    thesis=f"SMA20: {sma:.2f}, Prix: {current_price:.2f}"
 )
 print(f"✓ Prédiction créée: {direction} {TICKER} à {target:.2f}")
 `,
   rsi: `# MODÈLE: RSI
-import json
 from brvm_api import get_ohlcv_data, create_prediction
 
 def calculate_rsi(prices, period=14):
@@ -1846,7 +1802,6 @@ create_prediction(
 print(f"✓ Prédiction créée: {direction} {TICKER}, RSI={rsi:.1f}")
 `,
   momentum: `# MODÈLE: Momentum
-import json
 from brvm_api import get_ohlcv_data, create_prediction
 
 TICKER = "SNTS"
@@ -1867,10 +1822,10 @@ create_prediction(
     target_price=target, horizon_days=10, confidence=70,
     thesis=f"Momentum: {momentum:.1f}%"
 )
-print(f"✓ Prédiction créée: {direction} {TICKER}, Momentum={momentum:.1f}%")
+print(f"✓ Prédiction créée: {direction} {TICKER}")
 `,
   mean_reversion: `# MODÈLE: Mean Reversion (Bollinger)
-import json, math
+import math
 from brvm_api import get_ohlcv_data, create_prediction
 
 def bollinger(prices, period=20, num_std=2):
@@ -1987,7 +1942,6 @@ sys.stdout = output_capture
     statusEl.style.color = 'var(--up)';
     overlay.classList.remove('show');
     appendToConsole('✓ Environnement Python prêt', 'success');
-    appendToConsole('  Tapez votre code et cliquez sur ▶ EXÉCUTER', 'info');
   } catch (e) {
     statusEl.textContent = 'Pyodide: ✗ Erreur';
     statusEl.style.color = 'var(--down)';
@@ -2010,23 +1964,15 @@ async function runPythonCode() {
     if (newPreds.length > PREDICTIONS.length) {
       const added = newPreds.length - PREDICTIONS.length;
       appendToConsole(`\n✓ ${added} prédiction(s) ajoutée(s)`, 'success');
-      newPreds.slice(-added).forEach(p => {
-        const stock = STOCKS.find(s => s.ticker === p.symbol);
-        const horizon = p.horizon_days;
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + horizon);
-        PREDICTIONS.unshift({
-          id: p.id, author: p.author, symbol: p.symbol, dir: p.direction,
+      for (const p of newPreds.slice(-added)) {
+        const stock = market.stocks.find(s => s.ticker === p.symbol);
+        await predictionsManager.create({
+          author: p.author, symbol: p.symbol, dir: p.direction,
           entryPrice: stock ? stock.price : null, target: p.target_price,
-          horizon: horizon, conf: p.confidence, thesis: p.thesis,
-          type: p.direction === 'LONG' ? 'BULLISH' : 'BEARISH',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          expiresAt: expiresAt.toISOString()
+          horizon: p.horizon_days, conf: p.confidence, thesis: p.thesis
         });
-      });
+      }
       renderPredictions();
-      saveState();
     }
   } catch (e) {
     appendToConsole('✗ Erreur: ' + e.message, 'error');
@@ -2052,311 +1998,33 @@ function loadSavedModels() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   [A-B] SCORING ENGINE (scoring.js intégré)
+   INDICATEUR DE CONNEXION API
    ═══════════════════════════════════════════════════════════════ */
-class ScoringEngine {
-  constructor() {
-    this.lastRun = null;
-    this.intervalMs = 60 * 1000;
-  }
-
-  start() {
-    console.log('[ScoringEngine] Démarrage du worker...');
-    this.run();
-    setInterval(() => this.run(), this.intervalMs);
-  }
-
-  run() {
-    const now = new Date();
-    const expired = PREDICTIONS.filter(p =>
-      p.status === 'active' && p.expiresAt && new Date(p.expiresAt) <= now
-    );
-
-    if (expired.length === 0) { this.lastRun = now; return 0; }
-
-    console.log(`[ScoringEngine] ${expired.length} prédiction(s) à scorer`);
-    expired.forEach(pred => this.scorePrediction(pred));
-    this.lastRun = now;
-
-    saveState();
-    renderPredictions();
-    renderLeaderboard();
-    return expired.length;
-  }
-
-  scorePrediction(pred) {
-    const stock = STOCKS.find(s => s.ticker === pred.symbol);
-    if (!stock) { console.warn(`[ScoringEngine] Ticker ${pred.symbol} introuvable`); return; }
-
-    const actualPrice = stock.price;
-    const entryPrice = pred.entryPrice || stock.price;
-    const targetPrice = pred.target;
-    const direction = pred.dir;
-
-    const pctError = Math.abs((targetPrice - actualPrice) / actualPrice) * 100;
-
-    let pnlPct = 0;
-    if (direction === 'LONG') pnlPct = ((actualPrice - entryPrice) / entryPrice) * 100;
-    else if (direction === 'SHORT') pnlPct = ((entryPrice - actualPrice) / entryPrice) * 100;
-
-    let hitTarget = false;
-    if (direction === 'LONG') hitTarget = actualPrice >= targetPrice;
-    else if (direction === 'SHORT') hitTarget = actualPrice <= targetPrice;
-
-    const volatility = Math.abs(stock.change) / 100 + 0.02;
-    const maxDrawdown = -(volatility * Math.sqrt(pred.horizon) * 100);
-    const distanceToTarget = ((actualPrice - targetPrice) / targetPrice) * 100;
-
-    pred.status = 'scored';
-    pred.actualPrice = actualPrice;
-    pred.entryPrice = entryPrice;
-    pred.pnlPct = +pnlPct.toFixed(2);
-    pred.pctError = +pctError.toFixed(2);
-    pred.hitTarget = hitTarget;
-    pred.maxDrawdown = +maxDrawdown.toFixed(2);
-    pred.distanceToTarget = +distanceToTarget.toFixed(2);
-    pred.scoredAt = new Date().toISOString();
-
-    console.log(`[ScoringEngine] ✓ ${pred.author} · ${pred.symbol} · ${hitTarget ? 'HIT' : 'MISS'} · P&L: ${pnlPct.toFixed(2)}%`);
-  }
-
-  forceScore() {
-    const count = this.run();
-    toast(count > 0 ? `✓ ${count} prédiction(s) scorée(s)` : 'ℹ Aucune prédiction expirée');
-    return count;
-  }
-}
-
-const scoringEngine = new ScoringEngine();
-
-/* ═══════════════════════════════════════════════════════════════
-   [A-B] LEADERBOARD ENGINE (leaderboard.js intégré)
-   ═══════════════════════════════════════════════════════════════ */
-class LeaderboardEngine {
-  constructor() {
-    this.periods = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 9999 };
-    this.currentPeriod = 'ALL';
-    this.currentSort = 'composite';
-  }
-
-  getScoredPredictions(period = 'ALL') {
-    const days = this.periods[period] || 9999;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    return PREDICTIONS.filter(p =>
-      p.status === 'scored' && p.scoredAt && new Date(p.scoredAt) >= cutoff
-    );
-  }
-
-  aggregateByTrader(period = 'ALL') {
-    const preds = this.getScoredPredictions(period);
-    const traders = {};
-
-    preds.forEach(p => {
-      if (!traders[p.author]) {
-        traders[p.author] = {
-          name: p.author, totalPreds: 0, hits: 0, misses: 0,
-          totalPnl: 0, wins: [], losses: [],
-          symbols: new Set(), confidences: [],
-          bestTrade: null, worstTrade: null,
-        };
-      }
-
-      const t = traders[p.author];
-      t.totalPreds++;
-      t.symbols.add(p.symbol);
-      t.confidences.push(p.conf);
-      t.totalPnl += p.pnlPct || 0;
-
-      if (p.hitTarget) { t.hits++; t.wins.push(p.pnlPct || 0); }
-      else { t.misses++; t.losses.push(p.pnlPct || 0); }
-
-      if (!t.bestTrade || (p.pnlPct || 0) > t.bestTrade.pnl) {
-        t.bestTrade = { symbol: p.symbol, pnl: p.pnlPct || 0 };
-      }
-      if (!t.worstTrade || (p.pnlPct || 0) < t.worstTrade.pnl) {
-        t.worstTrade = { symbol: p.symbol, pnl: p.pnlPct || 0 };
-      }
-    });
-
-    Object.values(traders).forEach(t => {
-      t.hitRate = t.totalPreds > 0 ? (t.hits / t.totalPreds) * 100 : 0;
-      t.avgPnl = t.totalPreds > 0 ? t.totalPnl / t.totalPreds : 0;
-      t.avgConfidence = t.confidences.length > 0
-        ? t.confidences.reduce((a, b) => a + b, 0) / t.confidences.length : 0;
-
-      const avgWin = t.wins.length > 0 ? t.wins.reduce((a, b) => a + b, 0) / t.wins.length : 0;
-      const avgLoss = t.losses.length > 0 ? Math.abs(t.losses.reduce((a, b) => a + b, 0) / t.losses.length) : 0;
-      t.profitFactor = avgLoss > 0 ? avgWin / avgLoss : (avgWin > 0 ? 99 : 0);
-      t.calibration = t.avgConfidence > 0 ? (t.hitRate / t.avgConfidence) * 100 : 0;
-
-      const precisionScore = Math.min(100, t.hitRate);
-      const pnlScore = Math.min(100, Math.max(0, (t.avgPnl + 20) * 2.5));
-      const calibScore = Math.min(100, t.calibration);
-      const pfScore = Math.min(100, t.profitFactor * 33);
-
-      t.compositeScore = Math.round(
-        precisionScore * 0.40 + pnlScore * 0.25 +
-        calibScore * 0.20 + pfScore * 0.15
-      );
-
-      t.badges = this.computeBadges(t);
-    });
-
-    return Object.values(traders);
-  }
-
-  computeBadges(trader) {
-    const badges = [];
-    if (trader.hitRate >= 80 && trader.totalPreds >= 5)
-      badges.push({ icon: '🎯', name: 'SNIPER', desc: 'Précision > 80%' });
-    if (trader.totalPnl >= 50)
-      badges.push({ icon: '🐋', name: 'WHALE', desc: 'P&L > 50%' });
-    if (trader.totalPreds >= 20)
-      badges.push({ icon: '🏛️', name: 'VÉTÉRAN', desc: '20+ prédictions' });
-    if (trader.profitFactor >= 2 && trader.totalPreds >= 5)
-      badges.push({ icon: '💎', name: 'DIAMANT', desc: 'Profit Factor > 2' });
-    if (trader.calibration >= 90 && trader.totalPreds >= 5)
-      badges.push({ icon: '🧘', name: 'ZEN', desc: 'Confiance calibrée' });
-    if (trader.symbols.size >= 5)
-      badges.push({ icon: '🌍', name: 'DIVERSIFIÉ', desc: '5+ tickers' });
-    if (trader.worstTrade && trader.worstTrade.pnl > -10 && trader.totalPreds >= 3)
-      badges.push({ icon: '🛡️', name: 'RISK-MGR', desc: 'Perte max < 10%' });
-    if (trader.hitRate >= 90 && trader.totalPreds >= 10)
-      badges.push({ icon: '👑', name: 'LÉGENDE', desc: 'Précision > 90%' });
-    return badges;
-  }
-
-  sortTraders(traders, sortBy = 'composite') {
-    const sorted = [...traders];
-    switch (sortBy) {
-      case 'composite': sorted.sort((a, b) => b.compositeScore - a.compositeScore); break;
-      case 'hitRate': sorted.sort((a, b) => b.hitRate - a.hitRate); break;
-      case 'pnl': sorted.sort((a, b) => b.totalPnl - a.totalPnl); break;
-      case 'preds': sorted.sort((a, b) => b.totalPreds - a.totalPreds); break;
-      case 'profitFactor': sorted.sort((a, b) => b.profitFactor - a.profitFactor); break;
+function updateAPIStatus(connected, latency = null) {
+  const statusEl = document.getElementById('api-status');
+  const textEl = document.getElementById('api-status-text');
+  const ftApi = document.getElementById('ft-api');
+  const ftLatency = document.getElementById('ft-latency');
+  
+  if (connected) {
+    statusEl.className = 'api-status connected';
+    textEl.textContent = 'API CONNECTÉE';
+    ftApi.textContent = 'CONNECTÉE';
+    ftApi.className = 'ok';
+    if (latency !== null) {
+      ftLatency.textContent = latency + 'ms';
     }
-    return sorted;
-  }
-
-  setPeriod(period) {
-    this.currentPeriod = period;
-    renderLeaderboard();
-  }
-
-  setSort(sortBy) {
-    this.currentSort = sortBy;
-    renderLeaderboard();
+  } else {
+    statusEl.className = 'api-status offline';
+    textEl.textContent = 'MODE HORS-LIGNE';
+    ftApi.textContent = 'HORS-LIGNE';
+    ftApi.style.color = 'var(--accent)';
+    ftLatency.textContent = '--';
   }
 }
 
-const leaderboardEngine = new LeaderboardEngine();
-
 /* ═══════════════════════════════════════════════════════════════
-   [D-E] RENDU DU LEADERBOARD
-   ═══════════════════════════════════════════════════════════════ */
-function renderLeaderboard() {
-  const container = document.getElementById('leaderboard-container');
-  if (!container) return;
-
-  const period = leaderboardEngine.currentPeriod;
-  const sortBy = leaderboardEngine.currentSort;
-  const traders = leaderboardEngine.sortTraders(
-    leaderboardEngine.aggregateByTrader(period), sortBy
-  );
-
-  document.querySelectorAll('.lb-period-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.period === period);
-  });
-  document.querySelectorAll('.lb-sort-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.sort === sortBy);
-  });
-
-  if (traders.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center;padding:40px;color:var(--muted)">
-        <div style="font-size:40px;margin-bottom:12px">🏆</div>
-        <div style="font-size:12px;margin-bottom:8px">Aucun trader classé pour cette période</div>
-        <div style="font-size:10px">Les prédictions sont scorées automatiquement à leur expiration.</div>
-        <div style="font-size:10px;margin-top:4px">Créez des prédictions avec un horizon court pour tester !</div>
-      </div>
-    `;
-    return;
-  }
-
-  const podium = traders.slice(0, 3);
-  const medals = ['🥇', '🥈', '🥉'];
-  const colors = ['var(--gold)', 'var(--silver)', 'var(--bronze)'];
-  const medalClasses = ['', 'silver', 'bronze'];
-
-  container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      ${podium.map((t, i) => `
-        <div class="podium-card" style="border:2px solid ${colors[i]}">
-          <div class="podium-medal ${medalClasses[i]}" style="background:${colors[i]}">${medals[i]}</div>
-          <div style="color:var(--cyan);font-weight:bold;font-size:12px;margin-top:8px">${t.name}</div>
-          <div style="color:${colors[i]};font-size:24px;font-weight:bold;margin:8px 0">${t.compositeScore}</div>
-          <div style="color:var(--muted);font-size:9px">SCORE COMPOSITE</div>
-          <div style="display:flex;justify-content:space-around;margin-top:8px;font-size:10px">
-            <div><div style="color:var(--up)">${t.hitRate.toFixed(0)}%</div><div style="color:var(--dim);font-size:8px">PRÉCISION</div></div>
-            <div><div style="color:${t.totalPnl >= 0 ? 'var(--up)' : 'var(--down)'}">${t.totalPnl >= 0 ? '+' : ''}${t.totalPnl.toFixed(1)}%</div><div style="color:var(--dim);font-size:8px">P&L</div></div>
-            <div><div style="color:var(--text)">${t.totalPreds}</div><div style="color:var(--dim);font-size:8px">PRÉDS</div></div>
-          </div>
-          ${t.badges.length > 0 ? `
-            <div style="margin-top:8px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
-              ${t.badges.slice(0, 3).map(b => `<span class="badge-icon" title="${b.name}: ${b.desc}">${b.icon}</span>`).join('')}
-            </div>
-          ` : ''}
-        </div>
-      `).join('')}
-    </div>
-
-    <table class="trade-tbl">
-      <thead>
-        <tr>
-          <th>#</th><th>TRADER</th><th>SCORE</th><th>PRÉCISION</th>
-          <th>P&L</th><th>PRÉDS</th><th>PF</th><th>BADGES</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${traders.map((t, i) => `
-          <tr>
-            <td style="color:var(--accent);font-weight:bold">${i + 1}</td>
-            <td style="color:var(--cyan);font-weight:bold">${t.name}</td>
-            <td style="color:var(--accent);font-weight:bold;font-size:14px">${t.compositeScore}</td>
-            <td class="${t.hitRate >= 60 ? 'pnl-pos' : t.hitRate < 40 ? 'pnl-neg' : ''}">${t.hitRate.toFixed(1)}%</td>
-            <td class="${t.totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${t.totalPnl >= 0 ? '+' : ''}${t.totalPnl.toFixed(1)}%</td>
-            <td>${t.totalPreds}</td>
-            <td>${t.profitFactor.toFixed(2)}</td>
-            <td style="font-size:14px">${t.badges.map(b => `<span class="badge-icon" title="${b.name}: ${b.desc}">${b.icon}</span>`).join(' ')}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-
-    <div style="margin-top:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-      <div class="pcard">
-        <div class="lb">TRADERS ACTIFS</div>
-        <div class="vl" style="font-size:18px">${traders.length}</div>
-      </div>
-      <div class="pcard">
-        <div class="lb">PRÉDICTIONS SCORÉES</div>
-        <div class="vl" style="font-size:18px">${traders.reduce((s, t) => s + t.totalPreds, 0)}</div>
-      </div>
-      <div class="pcard">
-        <div class="lb">HIT RATE MOYEN</div>
-        <div class="vl" style="font-size:18px">${(traders.reduce((s, t) => s + t.hitRate, 0) / traders.length).toFixed(1)}%</div>
-      </div>
-      <div class="pcard">
-        <div class="lb">P&L MOYEN</div>
-        <div class="vl" style="font-size:18px">${(traders.reduce((s, t) => s + t.avgPnl, 0) / traders.length).toFixed(1)}%</div>
-      </div>
-    </div>
-  `;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   [G] NAVIGATION
+   NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
 function switchView(viewId) {
   document.querySelectorAll('.fkey').forEach(b =>
@@ -2388,7 +2056,6 @@ document.addEventListener('keydown', e => {
   if (map[e.key]) { e.preventDefault(); switchView(map[e.key]); }
 });
 
-/* [G] Script de bascule des sous-onglets */
 document.querySelectorAll('.subtabs').forEach(group => {
   group.querySelectorAll('.subtab').forEach(tab => {
     tab.onclick = () => {
@@ -2424,12 +2091,9 @@ document.getElementById('cmd-form').onsubmit = e => {
   e.preventDefault();
   const cmd = document.getElementById('cmd-input').value.trim().toUpperCase();
   if (!cmd) return;
-  const f = STOCKS.find(s => s.ticker === cmd);
+  const f = market.stocks.find(s => s.ticker === cmd);
   if (f) {
-    selectedTicker = cmd;
-    renderWatchlist();
-    renderTickerDetail();
-    rebuildCharts();
+    market.selectTicker(cmd);
     switchView('equity');
     toast('✓ ' + cmd + ' chargé');
   } else {
@@ -2438,32 +2102,29 @@ document.getElementById('cmd-form').onsubmit = e => {
   document.getElementById('cmd-input').value = '';
 };
 
-document.getElementById('pred-form').onsubmit = e => {
+document.getElementById('pred-form').onsubmit = async e => {
   e.preventDefault();
-  const stock = STOCKS.find(s => s.ticker === document.getElementById('p-sym').value);
+  const stock = market.stocks.find(s => s.ticker === document.getElementById('p-sym').value);
   const horizon = parseInt(document.getElementById('p-horiz').value);
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + horizon);
-
-  PREDICTIONS.unshift({
-    id: Date.now(),
-    author: document.getElementById('p-auth').value,
-    symbol: document.getElementById('p-sym').value,
-    dir: document.getElementById('p-dir').value,
-    entryPrice: stock ? stock.price : null,
-    target: parseFloat(document.getElementById('p-target').value),
-    horizon: horizon,
-    conf: parseInt(document.getElementById('p-conf').value),
-    thesis: document.getElementById('p-thesis').value,
-    type: document.getElementById('p-dir').value === 'LONG' ? 'BULLISH' : 'BEARISH',
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    expiresAt: expiresAt.toISOString()
-  });
-  renderPredictions();
-  saveState();
-  e.target.reset();
-  toast('✓ Prédiction enregistrée — sera scorée à expiration');
+  
+  try {
+    await predictionsManager.create({
+      author: document.getElementById('p-auth').value,
+      symbol: document.getElementById('p-sym').value,
+      dir: document.getElementById('p-dir').value,
+      entryPrice: stock ? stock.price : null,
+      target: parseFloat(document.getElementById('p-target').value),
+      horizon: horizon,
+      conf: parseInt(document.getElementById('p-conf').value),
+      thesis: document.getElementById('p-thesis').value
+    });
+    
+    renderPredictions();
+    e.target.reset();
+    toast('✓ Prédiction enregistrée' + (predictionsManager.useAPI ? ' (API)' : ' (local)'));
+  } catch (error) {
+    toast('✗ Erreur: ' + error.message);
+  }
 };
 
 document.getElementById('trade-form').onsubmit = e => {
@@ -2565,7 +2226,8 @@ document.querySelectorAll('.chart-btn').forEach(btn => {
 
 document.getElementById('export-data').onclick = () => {
   const data = {
-    predictions: PREDICTIONS, trades: TRADES,
+    predictions: predictionsManager.getAll(),
+    trades: TRADES,
     theme: currentTheme, chartType: chartType,
     exportDate: new Date().toISOString()
   };
@@ -2589,12 +2251,10 @@ document.getElementById('import-file').onchange = e => {
   reader.onload = evt => {
     try {
       const data = JSON.parse(evt.target.result);
-      if (data.predictions) PREDICTIONS = data.predictions;
       if (data.trades) TRADES = data.trades;
       if (data.theme) setTheme(data.theme);
       if (data.chartType) setChartType(data.chartType);
       saveState();
-      renderPredictions();
       renderTrades();
       toast('✓ Données importées');
     } catch (err) {
@@ -2605,14 +2265,12 @@ document.getElementById('import-file').onchange = e => {
 };
 
 document.getElementById('reset-data').onclick = () => {
-  if (confirm('⚠️ Effacer TOUTES les données ?')) {
-    PREDICTIONS = [];
+  if (confirm('⚠️ Effacer TOUTES les données locales ?')) {
     TRADES = [];
     localStorage.clear();
-    renderPredictions();
     renderTrades();
     loadSavedModels();
-    toast('✓ Données effacées');
+    toast('✓ Données locales effacées');
   }
 };
 
@@ -2629,37 +2287,75 @@ setInterval(() => {
     new Date().toLocaleTimeString('fr-FR', { hour12: false });
 }, 1000);
 
-document.getElementById('refresh-btn').onclick = () => {
-  STOCKS.forEach(s => {
-    const d = (Math.random() - 0.5) * 0.4;
-    s.change = +(s.change + d).toFixed(2);
-    s.price = Math.round(s.price * (1 + d / 100));
-  });
+document.getElementById('refresh-btn').onclick = async () => {
+  // Rafraîchir depuis l'API si possible
+  const apiOk = await market.loadTickers();
+  market.refreshPrices(); // Simulation locale en plus
+  window.STOCKS = market.stocks;
   renderWatchlist();
   renderTickerDetail();
-  toast('⟳ Watchlist rafraîchie');
+  toast(apiOk ? '⟳ Données actualisées (API)' : '⟳ Watchlist rafraîchie (local)');
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   INITIALISATION
+   INITIALISATION ASYNCHRONE (connectée au backend)
    ═══════════════════════════════════════════════════════════════ */
-window.onload = () => {
+window.onload = async () => {
+  console.log('[BRVM Terminal] Initialisation...');
+
+  // 1. Vérifier la connexion au backend
+  const startTime = performance.now();
+  const backendOk = await api.healthCheck();
+  const latency = Math.round(performance.now() - startTime);
+  
+  updateAPIStatus(backendOk, backendOk ? latency : null);
+  
+  if (backendOk) {
+    console.log('[BRVM Terminal] ✓ Backend connecté (' + latency + 'ms)');
+  } else {
+    console.warn('[BRVM Terminal] ⚠ Backend indisponible, mode hors-ligne');
+  }
+
+  // 2. Charger les données marché (API ou fallback)
+  await market.loadTickers();
+  window.STOCKS = market.stocks;
+  console.log(`[Market] ✓ ${market.stocks.length} tickers chargés`);
+
+  // 3. Charger les prédictions (API ou localStorage)
+  await predictionsManager.load();
+  window.PREDICTIONS = predictionsManager.getAll();
+  console.log(`[Predictions] ✓ ${predictionsManager.getAll().length} prédictions`);
+
+  // 4. Configuration initiale
   loadState();
   setTheme(currentTheme);
   setChartType(chartType);
   document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
+
+  // 5. Rendu initial
   renderWatchlist();
   renderTickerDetail();
   renderNews();
   renderPredictions();
   renderTrades();
-  rebuildCharts();
+  await rebuildCharts();
   initMonacoEditor();
   loadSavedModels();
 
-  // Démarrer le scoring engine
+  // 6. Démarrer le scoring engine
   scoringEngine.start();
   renderLeaderboard();
+
+  // 7. Rafraîchissement périodique des données marché
+  setInterval(async () => {
+    if (api.isConnected) {
+      await market.loadTickers();
+      window.STOCKS = market.stocks;
+      renderWatchlist();
+    }
+  }, 60000); // Toutes les minutes
+
+  console.log('[BRVM Terminal] ✓ Initialisation terminée');
 };
 
 window.onresize = () => rebuildCharts();
