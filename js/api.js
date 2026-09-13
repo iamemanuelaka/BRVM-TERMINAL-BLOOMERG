@@ -1,24 +1,19 @@
 /**
- * ═══════════════════════════════════════════════════════════════
- * BRVM TERMINAL - API CLIENT
- * Client centralisé pour tous les appels au backend FastAPI
- * ═══════════════════════════════════════════════════════════════
+ * BRVM TERMINAL - API CLIENT (avec authentification)
  */
 
 const API_BASE = window.location.hostname === 'localhost' 
   ? 'http://localhost:8000/api/v1'
-  : '/api/v1';  // En production, même domaine
+  : '/api/v1';
 
 class BRVMClient {
   constructor() {
     this.baseURL = API_BASE;
     this.token = localStorage.getItem('brvm_token');
+    this.user = JSON.parse(localStorage.getItem('brvm_user') || 'null');
     this.isConnected = false;
   }
 
-  /**
-   * Effectue une requête HTTP avec gestion d'erreurs
-   */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const headers = {
@@ -26,16 +21,18 @@ class BRVMClient {
       ...options.headers
     };
 
-    // Ajouter le token JWT si présent
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
+      const response = await fetch(url, { ...options, headers });
+
+      if (response.status === 401) {
+        // Token expiré ou invalide
+        this.logout();
+        throw new Error('Session expirée, veuillez vous reconnecter');
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'Erreur serveur' }));
@@ -51,76 +48,15 @@ class BRVMClient {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // MARKET ENDPOINTS
-  // ═══════════════════════════════════════════════════════════
-
-  /**
-   * Récupère toutes les valeurs BRVM avec leurs cotations
-   */
-  async getTickers() {
-    return this.request('/market/tickers');
-  }
-
-  /**
-   * Récupère les données OHLCV pour un ticker (pour les graphiques)
-   */
-  async getOHLCV(symbol, limit = 365) {
-    return this.request(`/market/${symbol}/ohlcv?limit=${limit}`);
-  }
-
-  /**
-   * Recherche des tickers par nom ou symbole
-   */
-  async searchTickers(query) {
-    return this.request(`/market/search?q=${encodeURIComponent(query)}`);
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // PREDICTIONS ENDPOINTS
-  // ═══════════════════════════════════════════════════════════
-
-  /**
-   * Récupère toutes les prédictions (avec filtres optionnels)
-   */
-  async getPredictions(filters = {}) {
-    const params = new URLSearchParams();
-    if (filters.status) params.append('status', filters.status);
-    if (filters.symbol) params.append('symbol', filters.symbol);
-    if (filters.limit) params.append('limit', filters.limit);
-    
-    const queryString = params.toString();
-    return this.request(`/predictions/${queryString ? '?' + queryString : ''}`);
-  }
-
-  /**
-   * Crée une nouvelle prédiction
-   */
-  async createPrediction(data) {
-    return this.request('/predictions/', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  /**
-   * Récupère les statistiques globales des prédictions
-   */
-  async getPredictionStats() {
-    return this.request('/predictions/stats');
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // AUTH ENDPOINTS (pour plus tard)
-  // ═══════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════
+  // AUTH
+  // ═══════════════════════════════════════════════════
   async register(username, email, password) {
     const result = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ username, email, password })
     });
-    this.token = result.access_token;
-    localStorage.setItem('brvm_token', this.token);
+    this.setAuth(result);
     return result;
   }
 
@@ -129,20 +65,115 @@ class BRVMClient {
       method: 'POST',
       body: JSON.stringify({ username, password })
     });
-    this.token = result.access_token;
-    localStorage.setItem('brvm_token', this.token);
+    this.setAuth(result);
     return result;
+  }
+
+  setAuth(result) {
+    this.token = result.access_token;
+    this.user = result.user;
+    localStorage.setItem('brvm_token', this.token);
+    localStorage.setItem('brvm_user', JSON.stringify(this.user));
   }
 
   logout() {
     this.token = null;
+    this.user = null;
     localStorage.removeItem('brvm_token');
+    localStorage.removeItem('brvm_user');
+    if (typeof onAuthChange === 'function') onAuthChange();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // HEALTH CHECK
-  // ═══════════════════════════════════════════════════════════
+  isAuthenticated() {
+    return !!this.token && !!this.user;
+  }
 
+  async getMe() {
+    return this.request('/auth/me');
+  }
+
+  async getMyProfile() {
+    return this.request('/auth/me/profile');
+  }
+
+  async updateProfile(data) {
+    return this.request('/auth/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // ═══════════════════════════════════════════════════
+  // API KEYS
+  // ═══════════════════════════════════════════════════
+  async createAPIKey(name) {
+    return this.request('/auth/api-keys', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+  }
+
+  async listAPIKeys() {
+    return this.request('/auth/api-keys');
+  }
+
+  async deleteAPIKey(keyId) {
+    return this.request(`/auth/api-keys/${keyId}`, { method: 'DELETE' });
+  }
+
+  // ═══════════════════════════════════════════════════
+  // MARKET
+  // ═══════════════════════════════════════════════════
+  async getTickers() {
+    return this.request('/market/tickers');
+  }
+
+  async getOHLCV(symbol, limit = 365) {
+    return this.request(`/market/${symbol}/ohlcv?limit=${limit}`);
+  }
+
+  async searchTickers(query) {
+    return this.request(`/market/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // PREDICTIONS
+  // ═══════════════════════════════════════════════════
+  async getPredictions(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.symbol) params.append('symbol', filters.symbol);
+    if (filters.author) params.append('author', filters.author);
+    if (filters.limit) params.append('limit', filters.limit);
+    const qs = params.toString();
+    return this.request(`/predictions/${qs ? '?' + qs : ''}`);
+  }
+
+  async createPrediction(data) {
+    return this.request('/predictions/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getPredictionStats() {
+    return this.request('/predictions/stats');
+  }
+
+  // ═══════════════════════════════════════════════════
+  // LEADERBOARD
+  // ═══════════════════════════════════════════════════
+  async getLeaderboard(period = 'ALL', limit = 50) {
+    return this.request(`/auth/leaderboard?period=${period}&limit=${limit}`);
+  }
+
+  async getPublicProfile(username) {
+    return this.request(`/auth/profiles/${username}`);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // HEALTH
+  // ═══════════════════════════════════════════════════
   async healthCheck() {
     try {
       const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/health`);
@@ -155,5 +186,4 @@ class BRVMClient {
   }
 }
 
-// Instance globale
 const api = new BRVMClient();
