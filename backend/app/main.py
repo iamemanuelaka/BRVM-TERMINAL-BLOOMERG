@@ -5,6 +5,7 @@ from .database import engine, Base
 from .routers import auth, market, predictions
 from .routers import auth, market, predictions, news  # ← ajout
 
+from .routers import auth, market, predictions, news, users # <-- Ajout de users
 
 
 # Créer les tables
@@ -32,6 +33,7 @@ app.include_router(auth.router)
 app.include_router(market.router)
 app.include_router(predictions.router)
 app.include_router(news.router)  
+app.include_router(users.router) # <-- Ajout de l'inclusion
 
 @app.get("/")
 def root():
