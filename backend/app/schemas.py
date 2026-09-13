@@ -148,3 +148,42 @@ class PredictionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ═══════════════════════════════════════════════════════
+# NEWS SCHEMAS
+# ═══════════════════════════════════════════════════════
+class NewsOut(BaseModel):
+    id: UUID
+    title: str
+    content: Optional[str]
+    summary: Optional[str]
+    source: str
+    source_url: Optional[str]
+    published_at: datetime
+    sentiment: str
+    sentiment_score: float
+    keywords: List[str]
+    tickers: List[str] = []
+
+    class Config:
+        from_attributes = True
+
+
+class NewsAlertCreate(BaseModel):
+    ticker: Optional[str] = None
+    keyword: Optional[str] = None
+    sentiment_filter: Optional[str] = None
+
+
+class NewsAlertOut(BaseModel):
+    id: UUID
+    ticker: Optional[str]
+    keyword: Optional[str]
+    sentiment_filter: Optional[str]
+    is_active: bool
+    created_at: datetime
+    triggered_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
