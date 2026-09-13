@@ -4,27 +4,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import auth, market, predictions
 
-# Create all database tables on startup
+# Créer les tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="BRVM Terminal API",
-    version="1.0.0",
-    description="Backend API for BRVM Terminal - Bloomberg-like platform for BRVM market",
+    version="2.0.0",
+    description="Backend API pour BRVM Terminal avec authentification",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# CORS configuration
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific domains
+    allow_origins=["*"],  # En production : restreindre
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# Routers
 app.include_router(auth.router)
 app.include_router(market.router)
 app.include_router(predictions.router)
@@ -32,10 +32,9 @@ app.include_router(predictions.router)
 
 @app.get("/")
 def root():
-    """Root endpoint - API information."""
     return {
         "service": "BRVM Terminal API",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "online",
         "docs": "/docs"
     }
@@ -43,5 +42,4 @@ def root():
 
 @app.get("/health")
 def health():
-    """Health check endpoint."""
     return {"status": "ok"}
