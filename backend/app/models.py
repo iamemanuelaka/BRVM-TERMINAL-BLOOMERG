@@ -137,3 +137,51 @@ class Trade(Base):
     traded_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="trades")
+
+class News(Base):
+    """News article from various sources."""
+    __tablename__ = "news"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String(500), nullable=False)
+    content = Column(Text)
+    summary = Column(Text)
+    source = Column(String(100), nullable=False)  # brvm, bceao, business, etc.
+    source_url = Column(String(1000))
+    author = Column(String(200))
+    published_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    fetched_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Analyse
+    sentiment = Column(String(20), default="neutral")  # positive, negative, neutral
+    sentiment_score = Column(Float, default=0.0)  # -1.0 à 1.0
+    keywords = Column(ARRAY(String), default=[])
+    
+    # Relations
+    tickers = relationship("NewsTicker", back_populates="news", cascade="all, delete-orphan")
+
+
+class NewsTicker(Base):
+    """Association news ↔ tickers mentionnés."""
+    __tablename__ = "news_tickers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    news_id = Column(UUID(as_uuid=True), ForeignKey("news.id"), nullable=False, index=True)
+    symbol = Column(String(20), nullable=False, index=True)
+    relevance = Column(Float, default=1.0)  # 0.0 à 1.0
+
+    news = relationship("News", back_populates="tickers")
+
+
+class NewsAlert(Base):
+    """Alertes personnalisées des utilisateurs."""
+    __tablename__ = "news_alerts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    ticker = Column(String(20))  # null = alerte générale
+    keyword = Column(String(100))  # mot-clé à surveiller
+    sentiment_filter = Column(String(20))  # positive, negative, null = tous
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    triggered_at = Column(DateTime(timezone=True))
