@@ -2422,6 +2422,7 @@ function switchView(viewId) {
   if (viewId === 'portfolio') updatePortfolio();
   if (viewId === 'charts' && chartBig) setTimeout(() => rebuildCharts(), 50);
   if (viewId === 'quant') renderLeaderboard();
+  // La vue profile est gérée par openUserProfile() qui appelle profileManager.loadProfile()
 }
 
 document.querySelectorAll('.fkey').forEach(btn => {
