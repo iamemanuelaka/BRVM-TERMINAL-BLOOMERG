@@ -1,7 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════
- * BRVM TERMINAL - MARKET MODULE
- * Gestion de la watchlist et des données marché
+ * BRVM TERMINAL - MARKET MODULE (v3.2 - Unifié BRVM + Global)
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -9,24 +8,10 @@ class MarketManager {
   constructor() {
     this.stocks = [];
     this.selectedTicker = 'SNTS';
-    this.fallbackStocks = [
-      { symbol: 'SNTS', name: 'SONATEL SENEGAL', price: 17500, change_pct: 1.45, volume: 14250, sector: 'Télécom', country: 'SN', cap_mrds: 2845, beta: 0.87 },
-      { symbol: 'ETIT', name: 'ECOBANK TRANS. INC.', price: 19, change_pct: -5.00, volume: 850000, sector: 'Banque', country: 'TG', cap_mrds: 1250, beta: 1.15 },
-      { symbol: 'SIBC', name: 'SOCIETE IVOIRIENNE DE BANQUE', price: 5400, change_pct: 0.00, volume: 3200, sector: 'Banque', country: 'CI', cap_mrds: 320, beta: 0.95 },
-      { symbol: 'BOAB', name: 'BANK OF AFRICA BF', price: 7100, change_pct: 2.16, volume: 11200, sector: 'Banque', country: 'BF', cap_mrds: 410, beta: 0.92 },
-      { symbol: 'PALC', name: 'PALM CI', price: 6800, change_pct: -0.73, volume: 4500, sector: 'Agro-industrie', country: 'CI', cap_mrds: 520, beta: 0.78 },
-      { symbol: 'SAFC', name: 'SAFCA CI', price: 215, change_pct: 0.94, volume: 8900, sector: 'Finance', country: 'CI', cap_mrds: 180, beta: 1.05 },
-      { symbol: 'SGBC', name: 'SG CI', price: 18500, change_pct: 0.54, volume: 2100, sector: 'Banque', country: 'CI', cap_mrds: 680, beta: 0.88 },
-      { symbol: 'ORAC', name: 'ORANGE CI', price: 2500, change_pct: 1.21, volume: 15600, sector: 'Télécom', country: 'CI', cap_mrds: 1450, beta: 0.82 },
-      { symbol: 'TTLC', name: 'TOTAL CI', price: 2400, change_pct: -0.42, volume: 3400, sector: 'Distribution', country: 'CI', cap_mrds: 290, beta: 0.95 },
-      { symbol: 'SLBC', name: 'SOLEIL CI', price: 850, change_pct: 2.41, volume: 12000, sector: 'Agro-industrie', country: 'CI', cap_mrds: 125, beta: 0.72 },
-      { symbol: 'NSBC', name: 'NESTLE CI', price: 4200, change_pct: 0.24, volume: 1800, sector: 'Agro-industrie', country: 'CI', cap_mrds: 210, beta: 0.65 },
-      { symbol: 'CIEC', name: 'CIE CI', price: 225, change_pct: -1.32, volume: 25000, sector: 'Utilities', country: 'CI', cap_mrds: 340, beta: 0.55 },
-    ];
   }
 
   /**
-   * Charge les tickers depuis l'API (avec fallback sur données locales)
+   * Charge les tickers depuis l'API unifiée (BRVM + Fallback Yahoo)
    */
   async loadTickers() {
     try {
@@ -40,82 +25,75 @@ class MarketManager {
           volume: t.volume || 0,
           sector: t.sector || 'N/A',
           country: t.country || 'N/A',
-          cap: t.cap_mrds || 0,
-          // Données par défaut si pas dans l'API
-          high: t.price ? t.price * 1.01 : 0,
-          low: t.price ? t.price * 0.99 : 0,
-          per: '10.0x',
-          beta: 1.0
+          cap: t.market_cap ? (t.market_cap / 1e9).toFixed(1) : (t.cap_mrds || 0),
+          per: t.trailing_pe ? t.trailing_pe.toFixed(1) + 'x' : 'N/A',
+          beta: t.beta || 1.0,
+          source: t.source || 'yahoo' // 'brvm' ou 'yahoo'
         }));
-        console.log(`[Market] ✓ ${this.stocks.length} tickers chargés depuis l'API`);
+        console.log(`[Market] ✓ ${this.stocks.length} tickers chargés`);
         return true;
       }
     } catch (error) {
-      console.warn('[Market] API indisponible, utilisation des données locales');
+      console.warn('[Market] API indisponible, utilisation des données locales de secours');
     }
     
-    // Fallback : données locales
-    this.stocks = this.fallbackStocks.map(s => ({
-      ticker: s.symbol,
-      name: s.name,
-      price: s.price,
-      change: s.change_pct,
-      volume: s.volume,
-      sector: s.sector,
-      country: s.country,
-      cap: s.cap_mrds,
-      high: s.price * 1.01,
-      low: s.price * 0.99,
-      per: '10.0x',
-      beta: s.beta
-    }));
+    // Fallback ultime si tout échoue
+    this.stocks = [
+      { ticker: 'SNTS', name: 'SONATEL SENEGAL', price: 17500, change: 1.45, volume: 14250, sector: 'Télécom', country: 'SN', cap: 2845, per: '14.2x', beta: 0.87, source: 'local' },
+      { ticker: 'ETIT', name: 'ECOBANK TRANS.', price: 19, change: -5.00, volume: 850000, sector: 'Banque', country: 'TG', cap: 1250, per: '5.1x', beta: 1.15, source: 'local' },
+      { ticker: 'AAPL', name: 'APPLE INC.', price: 175, change: 0.50, volume: 50000000, sector: 'Technologie', country: 'US', cap: 2700, per: '28.5x', beta: 1.2, source: 'yahoo' }
+    ];
     return false;
   }
 
   /**
-   * Récupère les données OHLCV pour un ticker
+   * Récupère les données OHLCV (gère automatiquement BRVM ou Yahoo via le backend)
    */
   async loadOHLCV(symbol, limit = 365) {
     try {
       return await api.getOHLCV(symbol, limit);
     } catch (error) {
-      console.warn(`[Market] OHLCV ${symbol} indisponible, génération locale`);
-      const stock = this.stocks.find(s => s.ticker === symbol);
-      if (stock && typeof generateOHLCV === 'function') {
-        return generateOHLCV(stock.price, limit);
-      }
+      console.warn(`[Market] OHLCV ${symbol} indisponible`);
       return [];
     }
   }
 
   /**
-   * Sélectionne un ticker
+   * Sélectionne un ticker (fonctionne aussi pour les tickers globaux)
    */
   selectTicker(symbol) {
-    this.selectedTicker = symbol;
+    this.selectedTicker = symbol.toUpperCase();
+    
+    // Si le ticker n'est pas dans la liste, on l'ajoute dynamiquement avec des données par défaut
+    if (!this.stocks.find(s => s.ticker === this.selectedTicker)) {
+      this.stocks.unshift({
+        ticker: this.selectedTicker,
+        name: this.selectedTicker,
+        price: 0, change: 0, volume: 0,
+        sector: 'Global', country: 'INT', cap: 0, per: 'N/A', beta: 1.0,
+        source: 'yahoo'
+      });
+    }
+    
     if (typeof renderWatchlist === 'function') renderWatchlist();
     if (typeof renderTickerDetail === 'function') renderTickerDetail();
     if (typeof rebuildCharts === 'function') rebuildCharts();
   }
 
-  /**
-   * Récupère le ticker sélectionné
-   */
   getSelected() {
     return this.stocks.find(s => s.ticker === this.selectedTicker) || this.stocks[0];
   }
 
-  /**
-   * Rafraîchit les prix (simulation locale pour l'instant)
-   */
   refreshPrices() {
+    // Simulation locale uniquement pour les données 'local'
     this.stocks.forEach(s => {
-      const delta = (Math.random() - 0.5) * 0.4;
-      s.change = +(s.change + delta).toFixed(2);
-      s.price = Math.round(s.price * (1 + delta / 100));
+      if (s.source === 'local') {
+        const delta = (Math.random() - 0.5) * 0.4;
+        s.change = +(s.change + delta).toFixed(2);
+        s.price = Math.round(s.price * (1 + delta / 100));
+      }
     });
   }
 }
 
-// Instance globale
 const market = new MarketManager();
