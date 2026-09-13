@@ -1199,7 +1199,21 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
         </div>
       </div>
     </div>
-
+    <!-- F9 PROFIL (Accessible via Leaderboard) -->
+<div class="view" id="view-profile">
+  <div class="panel">
+    <div class="panel-head cyan">
+      <span>👤 PROFIL TRADER</span>
+      <button class="btn btn-sm" onclick="switchView('quant')" style="width:auto;padding:3px 10px">← RETOUR AU LEADERBOARD</button>
+    </div>
+    <div class="panel-body" id="profile-content" style="padding:16px">
+      <div style="text-align:center;padding:40px;color:var(--muted)">
+        <div class="spinner" style="margin:0 auto 16px auto"></div>
+        Chargement du profil...
+      </div>
+    </div>
+  </div>
+</div>
     <!-- SIDEBAR DROITE -->
     <div class="panel sidebar-right">
       <div class="panel-head cyan" style="font-size:10px">
