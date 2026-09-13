@@ -54,3 +54,6 @@ Aucun serveur ni installation complexe n'est requis.
    ```bash
    git clone [https://github.com/votre-utilisateur/brvm-terminal.git](https://github.com/votre-utilisateur/brvm-terminal.git)
    cd brvm-terminal
+   
+2.voir l'apercu 
+   [🚀 VOIR L'APERÇU DU TERMINAL EN DIRECT](https://iamemanuelaka.github.io/BRVM-TERMINAL-BLOOMERG/apercu%20du%20terminal.html)
