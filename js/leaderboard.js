@@ -42,7 +42,7 @@ class LeaderboardEngine {
     preds.forEach(p => {
       if (!traders[p.author]) {
         traders[p.author] = {
-          name: p.author,
+          name: p.author, // Utilisé comme username pour le profil
           totalPreds: 0,
           hits: 0,
           misses: 0,
@@ -144,7 +144,7 @@ class LeaderboardEngine {
       badges.push({ icon: '🛡️', name: 'RISK-MGR', desc: 'Perte max < 10%' });
     }
     if (trader.hitRate >= 90 && trader.totalPreds >= 10) {
-      badges.push({ icon: '👑', name: 'LÉGende', desc: 'Précision > 90%' });
+      badges.push({ icon: '👑', name: 'LÉGENDE', desc: 'Précision > 90%' });
     }
 
     return badges;
@@ -231,7 +231,6 @@ function renderLeaderboard() {
 
   // Top 3 podium
   const podium = traders.slice(0, 3);
-  const rest = traders.slice(3);
 
   container.innerHTML = `
     <!-- PODIUM -->
@@ -240,11 +239,14 @@ function renderLeaderboard() {
         const medals = ['🥇', '🥈', '🥉'];
         const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
         return `
-          <div style="background:var(--panel-2);border:2px solid ${colors[i]};padding:12px;text-align:center;position:relative">
+          <div style="background:var(--panel-2);border:2px solid ${colors[i]};padding:12px;text-align:center;position:relative;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
             <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:${colors[i]};color:#000;padding:2px 8px;font-size:16px;border-radius:50%">
               ${medals[i]}
             </div>
-            <div style="color:var(--cyan);font-weight:bold;font-size:12px;margin-top:8px">${t.name}</div>
+            <!-- NOM CLIQUABLE VERS LE PROFIL -->
+            <div style="color:var(--cyan);font-weight:bold;font-size:12px;margin-top:8px;cursor:pointer;text-decoration:underline" onclick="openUserProfile('${t.name}')">
+              ${t.name}
+            </div>
             <div style="color:${colors[i]};font-size:24px;font-weight:bold;margin:8px 0">${t.compositeScore}</div>
             <div style="color:var(--muted);font-size:9px">SCORE COMPOSITE</div>
             <div style="display:flex;justify-content:space-around;margin-top:8px;font-size:10px">
@@ -254,7 +256,7 @@ function renderLeaderboard() {
             </div>
             ${t.badges.length > 0 ? `
               <div style="margin-top:8px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
-                ${t.badges.slice(0, 3).map(b => `<span title="${b.name}: ${b.desc}" style="font-size:14px;cursor:help">${b.icon}</span>`).join('')}
+                ${t.badges.slice(0, 3).map(b => `<span class="badge-icon" title="${b.name}: ${b.desc}">${b.icon}</span>`).join('')}
               </div>
             ` : ''}
           </div>
@@ -278,15 +280,16 @@ function renderLeaderboard() {
       </thead>
       <tbody>
         ${traders.map((t, i) => `
-          <tr>
+          <tr style="cursor:pointer" onclick="openUserProfile('${t.name}')">
             <td style="color:var(--accent);font-weight:bold">${i + 1}</td>
-            <td style="color:var(--cyan);font-weight:bold">${t.name}</td>
+            <!-- NOM CLIQUABLE VERS LE PROFIL -->
+            <td style="color:var(--cyan);font-weight:bold;text-decoration:underline" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--cyan)'">${t.name}</td>
             <td style="color:var(--accent);font-weight:bold;font-size:14px">${t.compositeScore}</td>
             <td class="${t.hitRate >= 60 ? 'pnl-pos' : t.hitRate < 40 ? 'pnl-neg' : ''}">${t.hitRate.toFixed(1)}%</td>
             <td class="${t.totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${t.totalPnl >= 0 ? '+' : ''}${t.totalPnl.toFixed(1)}%</td>
             <td>${t.totalPreds}</td>
             <td>${t.profitFactor.toFixed(2)}</td>
-            <td style="font-size:14px">${t.badges.map(b => `<span title="${b.name}: ${b.desc}" style="cursor:help">${b.icon}</span>`).join(' ')}</td>
+            <td style="font-size:14px">${t.badges.map(b => `<span class="badge-icon" title="${b.name}: ${b.desc}">${b.icon}</span>`).join(' ')}</td>
           </tr>
         `).join('')}
       </tbody>
