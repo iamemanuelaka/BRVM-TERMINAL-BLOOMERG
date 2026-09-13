@@ -62,7 +62,9 @@ class NewsScraper:
                 return 0
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            
+
+            # Dans le scraper, ajoute ce code pour voir la structure HTML
+            print(soup.prettify()[:2000])  # Affiche les 2000 premiers caractères
             # Trouver les articles (structure typique WordPress)
             articles = soup.find_all('article') or soup.find_all('div', class_=re.compile(r'post|article|entry'))
             
@@ -159,6 +161,8 @@ class NewsScraper:
             
             soup = BeautifulSoup(response.text, 'html.parser')
             
+            # Dans le scraper, ajoute ce code pour voir la structure HTML
+            print(soup.prettify()[:2000])  # Affiche les 2000 premiers caractères
             # Chercher les articles
             articles = soup.find_all('div', class_=re.compile(r'news-item|article|post'))
             
@@ -250,7 +254,9 @@ class NewsScraper:
                 return 0
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            
+
+            # Dans le scraper, ajoute ce code pour voir la structure HTML
+            print(soup.prettify()[:2000])  # Affiche les 2000 premiers caractères
             # Chercher les actualités
             articles = soup.find_all(['article', 'div'], class_=re.compile(r'news|article|item'))
             
@@ -342,7 +348,8 @@ class NewsScraper:
                 return 0
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            
+            # Dans le scraper, ajoute ce code pour voir la structure HTML
+            print(soup.prettify()[:2000])  # Affiche les 2000 premiers caractères
             # Chercher les actualités
             articles = soup.find_all(['article', 'div'], class_=re.compile(r'news|article|item|publication'))
             
