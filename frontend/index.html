@@ -493,6 +493,45 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   BADGES DE SOURCE DE DONNÉES
+   ═══════════════════════════════════════════════════════════════ */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.source-badge.brvm {
+  background: rgba(0, 255, 102, 0.15);
+  color: var(--up);
+  border: 1px solid var(--up);
+}
+.source-badge.global {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+}
+.source-badge.local {
+  background: rgba(255, 153, 0, 0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+/* Ajustement du titre pour accueillir le badge */
+.ticker-head h1 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}  
+
+/* ═══════════════════════════════════════════════════════════════
    AUTH MODAL (Phase 2C)
    ═══════════════════════════════════════════════════════════════ */
 .auth-modal { max-width: 400px; }
@@ -1459,15 +1498,22 @@ function renderWatchlist() {
     return;
   }
   
-  body.innerHTML = stocks.map(s => `
+  body.innerHTML = stocks.map(s => {
+    const badgeClass = s.source === 'brvm' ? 'brvm' : (s.source === 'yahoo' ? 'global' : 'local');
+    const badgeText = s.source === 'brvm' ? '🇧🇷 BRVM' : (s.source === 'yahoo' ? '🌍 GLOBAL' : '💾 LOCAL');
+    
+    return `
     <tr data-t="${s.ticker}" class="${s.ticker === selectedTicker ? 'sel' : ''}">
-      <td class="ticker">${s.ticker}</td>
+      <td>
+        <span class="ticker">${s.ticker}</span>
+        <span class="source-badge ${badgeClass}">${badgeText}</span>
+      </td>
       <td style="text-align:right;color:var(--text)">${(s.price || 0).toLocaleString('fr-FR')}</td>
       <td style="text-align:right;font-weight:bold" class="${(s.change || 0) > 0 ? 'up' : (s.change || 0) < 0 ? 'down' : 'flat'}">
         ${(s.change || 0) > 0 ? '+' : ''}${(s.change || 0).toFixed(2)}%
       </td>
     </tr>
-  `).join('');
+  `}).join('');
   
   body.querySelectorAll('tr').forEach(tr => {
     tr.onclick = () => market.selectTicker(tr.dataset.t);
@@ -1477,19 +1523,27 @@ function renderWatchlist() {
 function renderTickerDetail() {
   const s = market.getSelected();
   if (!s) return;
-  document.getElementById('t-ticker').textContent = s.ticker + ' GP';
+  
+  const badgeClass = s.source === 'brvm' ? 'brvm' : (s.source === 'yahoo' ? 'global' : 'local');
+  const badgeText = s.source === 'brvm' ? '🇧🇷 BRVM' : (s.source === 'yahoo' ? '🌍 GLOBAL' : '💾 LOCAL');
+
+  document.getElementById('t-ticker').innerHTML = `
+    ${s.ticker} GP 
+    <span class="source-badge ${badgeClass}">${badgeText}</span>
+  `;
   document.getElementById('t-name').textContent = s.name;
-  document.getElementById('t-price').textContent = (s.price || 0).toLocaleString('fr-FR') + ' XOF';
+  document.getElementById('t-price').textContent = (s.price || 0).toLocaleString('fr-FR') + (s.source === 'yahoo' && s.price < 1000 ? ' USD' : ' XOF');
+  
   const ch = document.getElementById('t-change');
   ch.textContent = ((s.change || 0) >= 0 ? '+' : '') + (s.change || 0).toFixed(2) + '%';
   ch.className = (s.change || 0) >= 0 ? 'up' : 'down';
   ch.style.cssText = 'font-size:11px;font-weight:bold;text-align:right';
-  document.getElementById('t-high').textContent = (s.high || 0).toLocaleString('fr-FR');
-  document.getElementById('t-low').textContent = (s.low || 0).toLocaleString('fr-FR');
+  
+  document.getElementById('t-high').textContent = (s.high || (s.price * 1.01) || 0).toLocaleString('fr-FR');
+  document.getElementById('t-low').textContent = (s.low || (s.price * 0.99) || 0).toLocaleString('fr-FR');
   document.getElementById('t-vol').textContent = (s.volume || 0).toLocaleString('fr-FR');
-  document.getElementById('t-per').textContent = s.per || '10.0x';
+  document.getElementById('t-per').textContent = s.per || 'N/A';
 }
-
 /* ═══════════════════════════════════════════════════════════════
    NEWS
    ═══════════════════════════════════════════════════════════════ */
