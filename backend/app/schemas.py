@@ -1,8 +1,87 @@
 """Pydantic schemas for request/response validation."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
+
+
+# ═══════════════════════════════════════════════════════
+# AUTH SCHEMAS
+# ═══════════════════════════════════════════════════════
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=6)
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: UUID
+    username: str
+    email: str
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
+
+
+class TokenData(BaseModel):
+    user_id: Optional[str] = None
+
+
+# ═══════════════════════════════════════════════════════
+# PROFILE SCHEMAS
+# ═══════════════════════════════════════════════════════
+class ProfileUpdate(BaseModel):
+    display_name: Optional[str] = None
+    bio: Optional[str] = None
+    is_public: Optional[bool] = None
+
+
+class ProfileOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    display_name: Optional[str]
+    bio: Optional[str]
+    avatar_url: Optional[str]
+    is_public: bool
+    composite_score: float
+    total_predictions: int
+    hit_rate: float
+    username: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ═══════════════════════════════════════════════════════
+# API KEY SCHEMAS
+# ═══════════════════════════════════════════════════════
+class APIKeyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+
+class APIKeyOut(BaseModel):
+    id: UUID
+    key: str
+    name: str
+    is_active: bool
+    last_used_at: Optional[datetime]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 # ═══════════════════════════════════════════════════════
@@ -19,14 +98,10 @@ class TickerWithQuote(TickerBase):
     price: Optional[float] = None
     change_pct: Optional[float] = None
     volume: Optional[int] = None
-    cap_mrds: Optional[float] = None
 
 
-# ═══════════════════════════════════════════════════════
-# OHLCV SCHEMAS
-# ═══════════════════════════════════════════════════════
 class OHLCVItem(BaseModel):
-    time: str  # Format YYYY-MM-DD for Lightweight Charts
+    time: str
     open: float
     high: float
     low: float
@@ -52,6 +127,7 @@ class PredictionCreate(BaseModel):
 
 class PredictionOut(BaseModel):
     id: UUID
+    user_id: UUID
     author_name: str
     symbol: str
     direction: str
@@ -72,17 +148,3 @@ class PredictionOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-# ═══════════════════════════════════════════════════════
-# AUTH SCHEMAS
-# ═══════════════════════════════════════════════════════
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
