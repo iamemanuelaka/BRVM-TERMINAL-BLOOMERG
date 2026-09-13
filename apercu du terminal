@@ -1,0 +1,2743 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRVM TERMINAL · Phase 2 · Final</title>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LIBRAIRIES EXTERNES
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+<link href="https://cdn.jsdelivr.net/fontsource/css/jetbrains-mono@latest/index.css" rel="stylesheet">
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   VARIABLES CSS - THÈMES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Thème SOMBRE (par défaut) */
+:root, [data-theme="dark"] {
+  --bg: #000000;
+  --panel: #0a0a0a;
+  --panel-2: #111111;
+  --panel-3: #181818;
+  --border: #222222;
+  --border-2: #333333;
+  --text: #d1d4dc;
+  --muted: #888888;
+  --dim: #666666;
+  --accent: #ff9900;
+  --cyan: #00e5ff;
+  --up: #00ff66;
+  --down: #ff3333;
+  --chart-bg: #000000;
+  --chart-grid: #1a1a1a;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+/* Thème BLEU NUIT */
+[data-theme="blue"] {
+  --bg: #0a1628;
+  --panel: #0f1e35;
+  --panel-2: #152744;
+  --panel-3: #1a3154;
+  --border: #1e3a5f;
+  --border-2: #2a4a70;
+  --text: #c5d5e8;
+  --muted: #7a8fa6;
+  --dim: #5a6f86;
+  --accent: #4da6ff;
+  --cyan: #00d4ff;
+  --up: #00ff88;
+  --down: #ff4466;
+  --chart-bg: #0a1628;
+  --chart-grid: #1e3a5f;
+  --shadow: rgba(0,20,50,0.5);
+}
+
+/* Thème CLAIR */
+[data-theme="light"] {
+  --bg: #f5f5f5;
+  --panel: #ffffff;
+  --panel-2: #fafafa;
+  --panel-3: #f0f0f0;
+  --border: #e0e0e0;
+  --border-2: #d0d0d0;
+  --text: #333333;
+  --muted: #666666;
+  --dim: #999999;
+  --accent: #ff6600;
+  --cyan: #0088cc;
+  --up: #00aa44;
+  --down: #cc0000;
+  --chart-bg: #ffffff;
+  --chart-grid: #e0e0e0;
+  --shadow: rgba(0,0,0,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg); color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT PRINCIPAL
+   ═══════════════════════════════════════════════════════════════ */
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════════ */
+.header {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border-2);
+  padding: 6px 12px;
+  display: flex; align-items: center; gap: 16px;
+}
+.logo {
+  background: var(--accent); color: #000;
+  font-weight: 700; padding: 2px 8px;
+  letter-spacing: 2px; font-size: 11px;
+}
+.cmd-form {
+  flex: 1; display: flex; align-items: center;
+  background: var(--bg); border: 1px solid var(--border-2);
+  padding: 3px 8px;
+}
+.cmd-form .prompt { color: var(--accent); font-weight: bold; margin-right: 8px; }
+.cmd-form input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--cyan); font-family: inherit; font-size: 12px;
+  text-transform: uppercase;
+}
+.cmd-form input::placeholder { color: var(--dim); }
+.market-info { display: flex; gap: 12px; font-size: 11px; align-items: center; }
+.idx-up { color: var(--up); }
+.status { color: var(--muted); }
+.open { color: var(--up); font-weight: bold; }
+.settings-btn {
+  background: var(--panel-3);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.settings-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   F-KEYS NAVIGATION
+   ═══════════════════════════════════════════════════════════════ */
+.fkeys {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; padding: 4px; gap: 3px;
+  font-size: 10px;
+}
+.fkey {
+  flex: 1; padding: 4px 6px;
+  background: var(--panel-3); color: var(--muted);
+  border: 1px solid var(--border-2);
+  font-family: inherit; font-weight: bold;
+  letter-spacing: 0.5px; cursor: pointer;
+  transition: all 0.15s; text-align: center;
+}
+.fkey:hover { background: var(--border-2); color: var(--accent); }
+.fkey.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.fkey .fn { font-size: 8px; opacity: 0.75; margin-right: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN GRID
+   ═══════════════════════════════════════════════════════════════ */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 3fr 6fr 3fr;
+  gap: 4px; padding: 4px;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
+}
+.main.fs { grid-template-columns: 1fr; }
+.main.fs .sidebar-left,
+.main.fs .sidebar-right { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PANELS
+   ═══════════════════════════════════════════════════════════════ */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-head {
+  background: var(--panel-3);
+  color: var(--accent);
+  padding: 4px 8px;
+  font-weight: bold; font-size: 11px;
+  border-bottom: 1px solid var(--border-2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-head.cyan { color: var(--cyan); }
+.panel-head.muted { color: var(--muted); }
+.panel-body { flex: 1; overflow-y: auto; padding: 4px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   WATCHLIST
+   ═══════════════════════════════════════════════════════════════ */
+table.watch { width: 100%; border-collapse: collapse; }
+table.watch th {
+  position: sticky; top: 0;
+  background: var(--panel);
+  color: var(--dim); font-size: 10px;
+  text-align: left; padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  font-weight: normal;
+}
+table.watch th.r { text-align: right; }
+table.watch td { padding: 4px 6px; border-bottom: 1px solid var(--panel-2); }
+table.watch tr { cursor: pointer; transition: background 0.1s; }
+table.watch tr:hover { background: var(--panel-3); }
+table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--accent); }
+.ticker { color: var(--cyan); font-weight: bold; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════════════
+   TICKER DETAIL
+   ═══════════════════════════════════════════════════════════════ */
+.ticker-head {
+  padding: 8px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+}
+.ticker-head h1 { color: var(--accent); font-size: 14px; font-weight: bold; }
+.ticker-head .name { color: var(--text); font-size: 11px; font-weight: 600; }
+.ticker-head .price { color: var(--text); font-size: 16px; font-weight: bold; text-align: right; }
+.stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; padding: 6px 8px;
+  background: var(--panel-2); border-bottom: 1px solid var(--border);
+  font-size: 10px;
+}
+.stats .lbl { color: var(--dim); }
+.stats .val { color: var(--text); }
+.stats .val.cyan { color: var(--cyan); }
+
+/* ═══════════════════════════════════════════════════════════════
+   CHARTS
+   ═══════════════════════════════════════════════════════════════ */
+.chart-wrap { flex: 1; display: flex; flex-direction: column; padding: 6px; }
+.chart-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; color: var(--muted); margin-bottom: 4px;
+}
+.tf-btns { display: flex; gap: 8px; color: var(--cyan); }
+.tf-btns span { cursor: pointer; padding: 2px 4px; }
+.tf-btns span:hover { color: var(--accent); }
+.tf-btns span.active { color: var(--accent); font-weight: bold; }
+#chart-container, #chart-big {
+  flex: 1; width: 100%;
+  background: var(--chart-bg);
+  border: 1px solid var(--chart-grid);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FORMS
+   ═══════════════════════════════════════════════════════════════ */
+.form-row { margin-bottom: 6px; }
+.form-row label {
+  display: block; color: var(--dim);
+  font-size: 10px; margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.form-row input, .form-row select, .form-row textarea {
+  width: 100%; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border-2);
+  padding: 4px 6px; font-family: inherit; font-size: 11px;
+  outline: none;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  border-color: var(--accent);
+}
+.form-row textarea { resize: none; height: 50px; }
+.btn {
+  background: var(--accent); color: #000;
+  border: none; padding: 6px; font-family: inherit;
+  font-weight: bold; font-size: 11px; cursor: pointer;
+  letter-spacing: 1px; width: 100%;
+}
+.btn:hover { opacity: 0.9; }
+.btn-sm { width: auto; padding: 3px 10px; font-size: 10px; }
+.btn-up { background: var(--up); }
+.btn-dn { background: var(--down); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════ */
+.footer {
+  background: var(--panel-2);
+  border-top: 1px solid var(--border-2);
+  padding: 2px 12px;
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--muted);
+}
+.footer .ok { color: var(--up); font-weight: bold; }
+.footer .w { color: var(--text); font-weight: bold; }
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEWS
+   ═══════════════════════════════════════════════════════════════ */
+.view { display: none; }
+.view.active { display: contents; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SUB-TABS
+   ═══════════════════════════════════════════════════════════════ */
+.subtabs {
+  display: flex;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border-2);
+  padding: 0 8px;
+}
+.subtab {
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: 10px; font-weight: bold;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.subtab:hover { color: var(--accent); }
+.subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.subtab .ic { margin-right: 4px; font-size: 9px; }
+
+.content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.pane { display: none; flex: 1; overflow: hidden; }
+.pane.active { display: flex; flex-direction: column; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border-2);
+  padding: 20px; min-width: 420px;
+  box-shadow: 0 10px 40px var(--shadow);
+}
+.modal h2 {
+  color: var(--accent);
+  font-size: 14px;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+.modal-section { margin-bottom: 16px; }
+.modal-section h3 {
+  color: var(--cyan);
+  font-size: 11px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.theme-opts, .chart-opts { display: flex; gap: 8px; }
+.theme-btn, .chart-btn {
+  flex: 1; padding: 10px;
+  background: var(--panel-2);
+  border: 2px solid var(--border-2);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  text-align: center;
+  transition: all 0.15s;
+}
+.theme-btn:hover, .chart-btn:hover { border-color: var(--accent); }
+.theme-btn.active, .chart-btn.active {
+  border-color: var(--accent);
+  background: var(--panel-3);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLES (TRADES, PORTFOLIO)
+   ═══════════════════════════════════════════════════════════════ */
+.trade-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+.trade-tbl th {
+  background: var(--panel-3);
+  color: var(--accent);
+  padding: 6px; text-align: left;
+  border-bottom: 1px solid var(--border-2);
+  position: sticky; top: 0;
+}
+.trade-tbl td {
+  padding: 6px;
+  border-bottom: 1px solid var(--panel-2);
+}
+.trade-tbl tr:hover { background: var(--panel-3); }
+.pnl-pos { color: var(--up); font-weight: bold; }
+.pnl-neg { color: var(--down); font-weight: bold; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.port-sum {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px; padding: 10px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+}
+.pcard {
+  background: var(--panel-3);
+  padding: 10px;
+  border: 1px solid var(--border-2);
+}
+.pcard .lb {
+  color: var(--dim);
+  font-size: 9px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.pcard .vl {
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: bold;
+}
+.pcard .sb {
+  color: var(--muted);
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREDICTION CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.pred-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 6px; margin-bottom: 6px;
+  font-size: 11px;
+  transition: border-color 0.15s;
+}
+.pred-card:hover { border-color: var(--accent); }
+.pred-head { display: flex; justify-content: space-between; font-weight: bold; }
+.pred-meta {
+  display: flex; justify-content: space-between;
+  color: var(--muted); font-size: 10px; margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NEWS ITEMS
+   ═══════════════════════════════════════════════════════════════ */
+.news-item {
+  padding: 4px 0 4px 8px;
+  border-left: 2px solid var(--border-2);
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+.news-item.hot { border-left-color: var(--accent); }
+.news-item .time { color: var(--accent); }
+.news-item .tag { color: var(--text); font-weight: 600; }
+.news-item .txt { color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PYTHON EDITOR
+   ═══════════════════════════════════════════════════════════════ */
+.py-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px; padding: 4px;
+  overflow: hidden;
+}
+.py-panel {
+  display: flex; flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.py-toolbar {
+  background: var(--panel-3);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border-2);
+}
+.py-toolbar .title {
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.py-toolbar button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.py-toolbar button:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.py-toolbar button.run {
+  background: var(--up);
+  color: #000;
+  border-color: var(--up);
+}
+.py-toolbar select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 10px;
+  outline: none;
+}
+#monaco-editor-container {
+  flex: 1;
+  width: 100%;
+  background: var(--bg);
+}
+#python-console {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+#python-console .out-line { margin-bottom: 2px; }
+#python-console .out-line.error { color: var(--down); }
+#python-console .out-line.success { color: var(--up); }
+#python-console .out-line.info { color: var(--cyan); }
+#python-console .out-line.warning { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ANALYST (TRADINGVIEW)
+   ═══════════════════════════════════════════════════════════════ */
+.analyst-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100%;
+  gap: 4px;
+}
+.analyst-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.analyst-card h4 {
+  color: var(--cyan);
+  font-size: 11px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.metric {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--panel);
+}
+.metric .k { color: var(--dim); }
+.metric .v { color: var(--text); font-weight: bold; }
+
+.tech-toolbar {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border-2);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.tech-toolbar .sym-display {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 11px;
+  letter-spacing: 1px;
+  min-width: 140px;
+  text-align: center;
+}
+.tech-toolbar input.sym-input {
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  color: var(--cyan);
+  padding: 3px 8px;
+  font-family: inherit;
+  font-size: 11px;
+  width: 160px;
+  text-transform: uppercase;
+}
+.tech-toolbar input.sym-input:focus { border-color: var(--accent); outline: none; }
+.tech-toolbar button {
+  background: var(--panel-3);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tech-toolbar button:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.tech-toolbar .sep {
+  width: 1px; height: 20px;
+  background: var(--border-2);
+  margin: 0 4px;
+}
+.tech-toolbar .preset-group { display: flex; gap: 4px; }
+.tech-toolbar .preset-group button {
+  font-size: 9px; padding: 3px 6px;
+  color: var(--cyan);
+}
+.tech-toolbar .info-badge {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 9px;
+  font-style: italic;
+}
+.analyst-chart-wrap {
+  flex: 1;
+  position: relative;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.analyst-chart-badge {
+  position: absolute;
+  top: 6px; right: 10px;
+  z-index: 10;
+  display: flex; gap: 8px; align-items: center;
+  pointer-events: none;
+}
+.analyst-chart-badge .mode {
+  background: var(--accent); color: #000;
+  padding: 2px 8px; font-size: 9px;
+  font-weight: bold; letter-spacing: 1px;
+}
+.analyst-chart-badge .hint {
+  color: var(--dim); font-size: 9px;
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
+}
+#tradingview_analyst_chart {
+  flex: 1; width: 100%; min-height: 400px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST & LOADING
+   ═══════════════════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 30px; right: 20px;
+  background: var(--accent); color: #000;
+  padding: 8px 16px; font-weight: bold; font-size: 11px;
+  opacity: 0; transform: translateY(10px);
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 10000;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: var(--accent);
+  font-size: 14px;
+}
+.loading-overlay.show { display: flex; }
+.loading-overlay .spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="logo">BRVM TERMINAL</div>
+    <form class="cmd-form" id="cmd-form">
+      <span class="prompt">&gt;</span>
+      <input type="text" id="cmd-input" placeholder="Ticker (ex: SNTS) ou commande...">
+    </form>
+    <div class="market-info">
+      <div>BRVM-10: <span class="idx-up">108.42 (+0.35%)</span></div>
+      <div>BRVM-C: <span class="idx-up">215.18 (+0.12%)</span></div>
+      <div class="status">MARCHÉ: <span class="open">OUVERT</span></div>
+      <div class="status" id="clock">--:--:--</div>
+      <button class="settings-btn" id="settings-btn" title="Paramètres">⚙</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       F-KEYS NAVIGATION
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="fkeys">
+    <button class="fkey active" data-view="equity"><span class="fn">[F1]</span>EQUITY</button>
+    <button class="fkey" data-view="news"><span class="fn">[F2]</span>NEWS</button>
+    <button class="fkey" data-view="calc"><span class="fn">[F3]</span>CALC</button>
+    <button class="fkey" data-view="quant"><span class="fn">[F4]</span>QUANT</button>
+    <button class="fkey" data-view="charts"><span class="fn">[F5]</span>CHARTS</button>
+    <button class="fkey" data-view="analyst"><span class="fn">[F6]</span>ANALYST</button>
+    <button class="fkey" data-view="journal"><span class="fn">[F7]</span>JOURNAL</button>
+    <button class="fkey" data-view="portfolio"><span class="fn">[F8]</span>PORT</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN GRID
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="main" id="main-grid">
+
+    <!-- SIDEBAR GAUCHE : WATCHLIST -->
+    <div class="panel sidebar-left">
+      <div class="panel-head">
+        <span>WATCHLIST BRVM</span>
+        <span style="cursor:pointer" id="refresh-btn">⟳</span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <table class="watch">
+          <thead>
+            <tr><th>TICKER</th><th class="r">DERNIER</th><th class="r">VAR%</th></tr>
+          </thead>
+          <tbody id="wl-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F1 - EQUITY
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view active" id="view-equity">
+      <div class="panel">
+        <div class="ticker-head">
+          <div>
+            <h1 id="t-ticker">SNTS GP</h1>
+            <div class="name" id="t-name">SONATEL SENEGAL</div>
+          </div>
+          <div>
+            <div class="price" id="t-price">17 500 XOF</div>
+            <div class="up" id="t-change" style="font-size:11px;font-weight:bold;text-align:right">+1.45%</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div><span class="lbl">HAUT: </span><span class="val" id="t-high">17 600</span></div>
+          <div><span class="lbl">BAS: </span><span class="val" id="t-low">17 300</span></div>
+          <div><span class="lbl">VOL: </span><span class="val" id="t-vol">14 250</span></div>
+          <div><span class="lbl">PER: </span><span class="val cyan" id="t-per">14.2x</span></div>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-toolbar">
+            <span>GRAPHIQUE OHLCV</span>
+            <div class="tf-btns">
+              <span>1M</span><span>3M</span><span>6M</span><span class="active">1A</span>
+            </div>
+          </div>
+          <div id="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F2 - NEWS
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-news">
+      <div class="panel">
+        <div class="panel-head muted">
+          <span>DÉPÊCHES UEMOA / BRVM / BCEAO</span>
+          <span style="color:var(--accent)">LIVE</span>
+        </div>
+        <div class="panel-body" id="news-full"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F3 - CALC
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-calc">
+      <div class="panel">
+        <div class="panel-head cyan"><span>SIMULATEUR DE RENDEMENT</span></div>
+        <div class="panel-body" style="padding:12px">
+          <div class="form-row">
+            <label>Valeur / Indice</label>
+            <select id="calc-ticker">
+              <option>SNTS - SONATEL</option>
+              <option>ETIT - ECOBANK</option>
+              <option>SIBC - SIB CI</option>
+              <option>BOAB - BOA BF</option>
+              <option>PALC - PALM CI</option>
+            </select>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>Montant investi (FCFA)</label>
+              <input type="number" id="calc-amt" value="1000000">
+            </div>
+            <div class="form-row">
+              <label>Durée (mois)</label>
+              <input type="number" id="calc-mo" value="12">
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Rendement annualisé hypothétique (%)</label>
+            <input type="number" id="calc-rate" value="8" step="0.1">
+          </div>
+          <button class="btn" id="calc-btn">CALCULER →</button>
+          <div style="background:var(--bg);border:1px solid var(--border-2);padding:12px;text-align:center;margin-top:8px">
+            <div style="color:var(--dim);font-size:10px">VALEUR PROJETÉE</div>
+            <div style="color:var(--accent);font-size:20px;font-weight:bold;margin-top:4px" id="calc-out">—</div>
+          </div>
+          <div style="color:var(--dim);font-size:9px;margin-top:8px;text-align:center">
+            ⚠ Simulation basée sur une hypothèse de rendement constant. Ne constitue pas un conseil en investissement.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F4 - QUANT (PRÉDICTIONS + PYTHON)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-quant">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div class="subtabs">
+          <button class="subtab active" data-pane="manual"><span class="ic">📝</span>PRÉDICTIONS</button>
+          <button class="subtab" data-pane="python"><span class="ic">🐍</span>PYTHON</button>
+        </div>
+        <div class="content">
+          <!-- Pane : Prédictions manuelles -->
+          <div class="pane active" id="qp-manual">
+            <div class="panel-body" style="padding:10px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">NOUVELLE PRÉDICTION</h4>
+                  <form id="pred-form">
+                    <div class="form-row">
+                      <label>Nom du trader / modèle</label>
+                      <input type="text" id="p-auth" placeholder="ex: AlphaBot_v1" required>
+                    </div>
+                    <div class="form-grid">
+                      <div class="form-row">
+                        <label>Valeur ciblée</label>
+                        <select id="p-sym" required>
+                          <option>SNTS</option><option>ETIT</option><option>SIBC</option>
+                          <option>BOAB</option><option>PALC</option><option>SAFC</option>
+                          <option>SGBC</option><option>ORAC</option>
+                        </select>
+                      </div>
+                      <div class="form-row">
+                        <label>Direction</label>
+                        <select id="p-dir">
+                          <option value="LONG">LONG (Hausse)</option>
+                          <option value="SHORT">SHORT (Baisse)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-grid">
+                      <div class="form-row">
+                        <label>Prix cible (FCFA)</label>
+                        <input type="number" id="p-target" required>
+                      </div>
+                      <div class="form-row">
+                        <label>Horizon (jours)</label>
+                        <input type="number" id="p-horiz" value="30" required>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label>Niveau de confiance (%)</label>
+                      <input type="number" id="p-conf" min="0" max="100" value="75" required>
+                    </div>
+                    <div class="form-row">
+                      <label>Thèse / Facteurs du modèle</label>
+                      <textarea id="p-thesis" placeholder="Justification de la prédiction..."></textarea>
+                    </div>
+                    <button type="submit" class="btn">ENREGISTRER LA PRÉDICTION</button>
+                  </form>
+                </div>
+                <div>
+                  <h4 style="color:var(--cyan);font-size:11px;margin-bottom:8px">
+                    PRÉDICTIONS ENREGISTRÉES <span id="pred-count" style="color:var(--accent)">(0 actives)</span>
+                  </h4>
+                  <div id="pred-list" style="max-height:500px;overflow-y:auto"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Pane : Python Editor -->
+          <div class="pane" id="qp-python">
+            <div class="py-wrap">
+              <div class="py-panel">
+                <div class="py-toolbar">
+                  <span class="title">🐍 ÉDITEUR PYTHON</span>
+                  <button id="py-run" class="run">▶ EXÉCUTER</button>
+                  <button id="py-save">💾 SAUVEGARDER</button>
+                  <button id="py-clear">🗑️ EFFACER</button>
+                  <select id="py-templates">
+                    <option value="">-- Templates --</option>
+                    <option value="sma">Moyenne Mobile Simple</option>
+                    <option value="rsi">RSI Strategy</option>
+                    <option value="momentum">Momentum</option>
+                    <option value="mean_reversion">Mean Reversion</option>
+                  </select>
+                  <select id="py-saved-models">
+                    <option value="">-- Modèles sauvegardés --</option>
+                  </select>
+                </div>
+                <div id="monaco-editor-container"></div>
+              </div>
+              <div class="py-panel">
+                <div class="py-toolbar">
+                  <span class="title">📟 CONSOLE</span>
+                  <button id="console-clear">🗑️ EFFACER</button>
+                  <span style="margin-left:auto;color:var(--dim);font-size:9px" id="py-status">Pyodide: Initialisation...</span>
+                </div>
+                <div id="python-console"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F5 - CHARTS
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-charts">
+      <div class="panel">
+        <div class="panel-head cyan">
+          <span>CHARTS · MULTI-TIMEFRAME</span>
+          <span style="color:var(--accent)" id="chart-sym">SNTS</span>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-toolbar">
+            <span>Indicateurs: <span style="color:var(--cyan)">SMA20</span> · <span style="color:var(--accent)">EMA50</span> · <span style="color:var(--up)">BB</span></span>
+            <div class="tf-btns">
+              <span>1H</span><span>4H</span><span>1D</span><span class="active">1W</span><span>1M</span>
+            </div>
+          </div>
+          <div id="chart-big"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F6 - ANALYST (FONDAMENTALE + TECHNIQUE)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-analyst">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div class="subtabs">
+          <button class="subtab active" data-pane="fund"><span class="ic">📊</span>FONDAMENTALE</button>
+          <button class="subtab" data-pane="tech"><span class="ic">✏️</span>TECHNIQUE</button>
+        </div>
+        <div class="content">
+          <!-- Pane : Fondamentale -->
+          <div class="pane active" id="ap-fund">
+            <div class="analyst-layout">
+              <div class="panel">
+                <div class="panel-head">
+                  <span id="a-title">SNTS GP</span>
+                  <span style="color:var(--cyan)">FONDAMENTAUX</span>
+                </div>
+                <div class="panel-body" style="padding:8px" id="a-fund"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head muted"><span>NOTES & COMMENTAIRES</span></div>
+                <div class="panel-body" style="padding:8px">
+                  <textarea style="width:100%;height:100%;background:var(--bg);color:var(--text);border:1px solid var(--border-2);padding:8px;font-family:inherit;font-size:11px;resize:none" placeholder="Ajoutez vos notes d'analyse fondamentale ici..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Pane : Technique (TradingView) -->
+          <div class="pane" id="ap-tech">
+            <div class="analyst-chart-wrap">
+              <div class="tech-toolbar">
+                <span style="color:var(--dim);font-size:10px">SYMBOLE:</span>
+                <span class="sym-display" id="tv-current-symbol">—</span>
+                <input type="text" class="sym-input" id="tv-symbol-input" placeholder="Ex: BINANCE:BTCUSDT">
+                <button id="tv-load-btn">CHARGER</button>
+                <div class="sep"></div>
+                <span style="color:var(--dim);font-size:10px">PRESETS BRVM:</span>
+                <div class="preset-group">
+                  <button data-preset="SNTS">SNTS</button>
+                  <button data-preset="ETIT">ETIT</button>
+                  <button data-preset="ORAC">ORAC</button>
+                  <button data-preset="BOAB">BOAB</button>
+                  <button data-preset="PALC">PALC</button>
+                </div>
+                <div class="sep"></div>
+                <span style="color:var(--dim);font-size:10px">TEST:</span>
+                <div class="preset-group">
+                  <button data-preset="BINANCE:BTCUSDT" style="color:var(--accent)">BTC</button>
+                  <button data-preset="FX:EURUSD" style="color:var(--accent)">EUR/USD</button>
+                  <button data-preset="NASDAQ:AAPL" style="color:var(--accent)">AAPL</button>
+                  <button data-preset="TVC:GOLD" style="color:var(--accent)">OR</button>
+                </div>
+                <span class="info-badge">✏️ Barre d'outils à gauche du graphique</span>
+              </div>
+              <div class="analyst-chart-badge">
+                <span class="mode">MODE ANALYSE TECHNIQUE</span>
+                <span class="hint">✏️ Cliquez sur les crayons à gauche pour tracer</span>
+              </div>
+              <div id="tradingview_analyst_chart"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F7 - TRADE JOURNAL
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-journal">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div class="subtabs">
+          <button class="subtab active" data-pane="trades"><span class="ic">📋</span>TRANSACTIONS</button>
+          <button class="subtab" data-pane="jstats"><span class="ic">📊</span>STATISTIQUES</button>
+        </div>
+        <div class="content">
+          <!-- Pane : Transactions -->
+          <div class="pane active" id="jp-trades">
+            <div style="padding:10px">
+              <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px">
+                <div>
+                  <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">NOUVELLE TRANSACTION</h4>
+                  <form id="trade-form">
+                    <div class="form-row">
+                      <label>Date</label>
+                      <input type="date" id="tr-date" required>
+                    </div>
+                    <div class="form-grid">
+                      <div class="form-row">
+                        <label>Ticker</label>
+                        <select id="tr-tick" required>
+                          <option>SNTS</option><option>ETIT</option><option>SIBC</option>
+                          <option>BOAB</option><option>PALC</option><option>SAFC</option>
+                          <option>SGBC</option><option>ORAC</option>
+                        </select>
+                      </div>
+                      <div class="form-row">
+                        <label>Type</label>
+                        <select id="tr-type">
+                          <option value="BUY">ACHAT</option>
+                          <option value="SELL">VENTE</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-grid">
+                      <div class="form-row">
+                        <label>Quantité</label>
+                        <input type="number" id="tr-qty" min="1" required>
+                      </div>
+                      <div class="form-row">
+                        <label>Prix (FCFA)</label>
+                        <input type="number" id="tr-price" step="0.01" required>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <label>Frais (FCFA)</label>
+                      <input type="number" id="tr-fees" value="0" step="0.01">
+                    </div>
+                    <div class="form-row">
+                      <label>Stratégie / Notes</label>
+                      <textarea id="tr-notes" placeholder="Raison du trade, setup, émotion..."></textarea>
+                    </div>
+                    <button type="submit" class="btn">ENREGISTRER LA TRANSACTION</button>
+                  </form>
+                </div>
+                <div>
+                  <h4 style="color:var(--cyan);font-size:11px;margin-bottom:8px">HISTORIQUE DES TRANSACTIONS</h4>
+                  <div style="max-height:500px;overflow-y:auto">
+                    <table class="trade-tbl">
+                      <thead>
+                        <tr>
+                          <th>DATE</th>
+                          <th>TICKER</th>
+                          <th>TYPE</th>
+                          <th>QTY</th>
+                          <th>PRIX</th>
+                          <th>TOTAL</th>
+                          <th>P&L</th>
+                        </tr>
+                      </thead>
+                      <tbody id="trade-list"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Pane : Stats -->
+          <div class="pane" id="jp-jstats">
+            <div style="padding:12px">
+              <div class="port-sum">
+                <div class="pcard">
+                  <div class="lb">P&L TOTAL</div>
+                  <div class="vl" id="st-pnl">0 FCFA</div>
+                  <div class="sb">Résultat cumulé</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">NB TRADES</div>
+                  <div class="vl" id="st-cnt">0</div>
+                  <div class="sb">Transactions</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">WIN RATE</div>
+                  <div class="vl" id="st-wr">0%</div>
+                  <div class="sb">Ratio de réussite</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">PROFIT FACTOR</div>
+                  <div class="vl" id="st-pf">0.00</div>
+                  <div class="sb">Gain moy. / Perte moy.</div>
+                </div>
+              </div>
+              <div style="margin-top:16px">
+                <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">DÉTAILS PAR TICKER</h4>
+                <div id="st-by-ticker"></div>
+              </div>
+              <div style="margin-top:16px;color:var(--muted);font-size:10px">
+                <p><strong>Formules utilisées :</strong></p>
+                <p style="margin-top:4px">• P&L = (Prix vente - Prix moyen achat) × Quantité - Frais</p>
+                <p>• Win Rate = Nombre de trades gagnants / Nombre total de trades</p>
+                <p>• Profit Factor = Moyenne des gains / Moyenne des pertes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         F8 - PORTFOLIO (VUE D'ENSEMBLE + RISQUE + BACKTEST)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="view" id="view-portfolio">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div class="subtabs">
+          <button class="subtab active" data-pane="overview"><span class="ic">💼</span>VUE D'ENSEMBLE</button>
+          <button class="subtab" data-pane="risk"><span class="ic">⚠️</span>RISQUE & VaR</button>
+          <button class="subtab" data-pane="bt"><span class="ic">🔬</span>BACKTESTING</button>
+        </div>
+        <div class="content">
+          <!-- Pane : Vue d'ensemble -->
+          <div class="pane active" id="pp-overview">
+            <div style="padding:12px">
+              <div class="port-sum">
+                <div class="pcard">
+                  <div class="lb">VALEUR TOTALE</div>
+                  <div class="vl" id="pv-val">0 FCFA</div>
+                  <div class="sb">Portfolio actuel</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">P&L NON RÉALISÉ</div>
+                  <div class="vl" id="pv-pnl">0 FCFA</div>
+                  <div class="sb">Gain/perte latent</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">BETA</div>
+                  <div class="vl" id="pv-beta">0.00</div>
+                  <div class="sb">Sensibilité au marché</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">SHARPE RATIO</div>
+                  <div class="vl" id="pv-sharpe">0.00</div>
+                  <div class="sb">Rendement / risque</div>
+                </div>
+              </div>
+              <div style="margin-top:16px">
+                <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">COMPOSITION DU PORTFOLIO</h4>
+                <div id="port-hold"></div>
+              </div>
+              <div style="margin-top:16px">
+                <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">RÉPARTITION SECTORIELLE</h4>
+                <div id="port-sector"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Pane : Risque -->
+          <div class="pane" id="pp-risk">
+            <div style="padding:12px">
+              <h4 style="color:var(--accent);font-size:11px;margin-bottom:12px">ANALYSE DE RISQUE</h4>
+              <div class="port-sum">
+                <div class="pcard">
+                  <div class="lb">VaR (95%)</div>
+                  <div class="vl" id="rk-var">0 FCFA</div>
+                  <div class="sb">Perte max attendue (1 jour)</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">VOLATILITÉ</div>
+                  <div class="vl" id="rk-vol">0%</div>
+                  <div class="sb">Écart-type annualisé</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">MAX DRAWDOWN</div>
+                  <div class="vl" id="rk-dd">0%</div>
+                  <div class="sb">Pire perte historique</div>
+                </div>
+                <div class="pcard">
+                  <div class="lb">WACC</div>
+                  <div class="vl" id="rk-wacc">0%</div>
+                  <div class="sb">Coût moyen du capital</div>
+                </div>
+              </div>
+              <div style="margin-top:16px">
+                <h4 style="color:var(--accent);font-size:11px;margin-bottom:8px">SIMULATEUR DE SCÉNARIOS</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div>
+                    <div class="form-row">
+                      <label>Choc marché (%)</label>
+                      <input type="number" id="sc-shock" value="-10" step="1">
+                    </div>
+                    <div class="form-row">
+                      <label>Horizon (jours)</label>
+                      <input type="number" id="sc-horizon" value="30">
+                    </div>
+                    <button class="btn" id="sc-run">SIMULER LE CHOC</button>
+                  </div>
+                  <div>
+                    <div style="background:var(--panel-2);padding:12px;border:1px solid var(--border-2);min-height:150px">
+                      <div style="color:var(--dim);font-size:10px;margin-bottom:8px">IMPACT ESTIMÉ</div>
+                      <div id="sc-result" style="color:var(--muted);font-size:11px">Lancez une simulation pour voir l'impact.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:16px;color:var(--muted);font-size:10px">
+                <p><strong>VaR (Value at Risk)</strong> : Perte maximale attendue avec 95% de confiance sur 1 jour.</p>
+                <p style="margin-top:4px"><strong>Beta</strong> : Mesure de la sensibilité du portfolio aux mouvements du marché BRVM.</p>
+                <p style="margin-top:4px"><strong>Sharpe Ratio</strong> : Rendement excédentaire par unité de risque (sans risque = 3%).</p>
+                <p style="margin-top:4px"><strong>WACC</strong> : Coût moyen pondéré du capital (hypothèse : 10% actions, 5% dette).</p>
+              </div>
+            </div>
+          </div>
+          <!-- Pane : Backtest -->
+          <div class="pane" id="pp-bt">
+            <div style="padding:12px">
+              <h4 style="color:var(--accent);font-size:11px;margin-bottom:12px">BACKTESTING DE STRATÉGIE</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <div class="form-row">
+                    <label>Stratégie</label>
+                    <select id="bt-strat">
+                      <option value="sma_cross">Croisement SMA (20/50)</option>
+                      <option value="rsi">RSI Overbought/Oversold</option>
+                      <option value="momentum">Momentum 20 jours</option>
+                      <option value="mean_reversion">Mean Reversion (Bollinger)</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label>Ticker</label>
+                    <select id="bt-tick">
+                      <option>SNTS</option><option>ETIT</option><option>SIBC</option>
+                      <option>BOAB</option><option>PALC</option><option>ORAC</option>
+                    </select>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-row">
+                      <label>Date début</label>
+                      <input type="date" id="bt-start" value="2025-01-01">
+                    </div>
+                    <div class="form-row">
+                      <label>Date fin</label>
+                      <input type="date" id="bt-end" value="2026-09-13">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <label>Capital initial (FCFA)</label>
+                    <input type="number" id="bt-cap" value="10000000">
+                  </div>
+                  <div class="form-row">
+                    <label>Frais par trade (%)</label>
+                    <input type="number" id="bt-fees" value="0.5" step="0.1">
+                  </div>
+                  <button class="btn" id="bt-run">LANCER LE BACKTEST</button>
+                </div>
+                <div>
+                  <h4 style="color:var(--cyan);font-size:11px;margin-bottom:8px">RÉSULTATS</h4>
+                  <div id="bt-res" style="background:var(--panel-2);padding:12px;border:1px solid var(--border-2);min-height:300px;color:var(--muted);font-size:11px">
+                    <p>Lancez un backtest pour voir les résultats.</p>
+                    <p style="margin-top:8px;font-size:9px">Les backtests utilisent des données simulées. Les performances passées ne préjugent pas des performances futures.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR DROITE : PREDICTIONS + NEWS -->
+    <div class="panel sidebar-right">
+      <div class="panel-head cyan" style="font-size:10px">
+        <span>PREDICTIONS</span>
+        <span style="color:var(--accent)">SCORE</span>
+      </div>
+      <div class="panel-body" id="pred-sb" style="padding:6px"></div>
+      <div class="panel-head muted" style="font-size:10px;border-top:1px solid var(--border-2)">
+        <span>ACTUALITÉS</span>
+      </div>
+      <div class="panel-body" id="news-sb" style="padding:6px;max-height:200px"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="footer">
+    <div>
+      API: <span class="ok">OK</span> ·
+      LATENCE: <span class="w">24ms</span> ·
+      WS: <span class="ok">ACTIF</span> ·
+      DB: <span class="ok">OK</span> ·
+      THÈME: <span class="w" id="ft-theme">SOMBRE</span>
+    </div>
+    <div>BRVM TERMINAL v2.0 · PHASE 2 FINAL</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SETTINGS MODAL
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h2>⚙ PARAMÈTRES DU TERMINAL</h2>
+
+    <div class="modal-section">
+      <h3>🎨 THÈME</h3>
+      <div class="theme-opts">
+        <button class="theme-btn active" data-theme="dark">🌑 SOMBRE</button>
+        <button class="theme-btn" data-theme="blue">🌃 BLEU NUIT</button>
+        <button class="theme-btn" data-theme="light">☀️ CLAIR</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>📊 TYPE DE GRAPHIQUE</h3>
+      <div class="chart-opts">
+        <button class="chart-btn active" data-ct="candle">🕯️ BOUGIES</button>
+        <button class="chart-btn" data-ct="line">📈 LIGNES</button>
+        <button class="chart-btn" data-ct="both">🕯️📈 LES DEUX</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>💾 DONNÉES</h3>
+      <div style="display:flex;gap:8px">
+        <button class="theme-btn" id="export-data">📤 EXPORTER</button>
+        <button class="theme-btn" id="import-data">📥 IMPORTER</button>
+        <button class="theme-btn" id="reset-data" style="color:var(--down)">🗑️ TOUT EFFACER</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none">
+    </div>
+
+    <button class="btn" id="modal-close" style="margin-top:12px">FERMER</button>
+  </div>
+</div>
+
+<!-- Loading overlay pour Pyodide -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div>Chargement de l'environnement Python...</div>
+  <div style="font-size:11px;color:var(--dim);margin-top:8px">Cela peut prendre 10-20 secondes</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   DONNÉES BRVM
+   ═══════════════════════════════════════════════════════════════ */
+const STOCKS = [
+  { ticker: 'SNTS', name: 'SONATEL SENEGAL', price: 17500, change: 1.45, volume: 14250, high: 17600, low: 17300, per: '14.2x', cap: 2845, sector: 'Télécom', country: 'SN', beta: 0.87 },
+  { ticker: 'ETIT', name: 'ECOBANK TRANS. INC.', price: 19, change: -5.00, volume: 850000, high: 20, low: 18, per: '5.1x', cap: 1250, sector: 'Banque', country: 'TG', beta: 1.15 },
+  { ticker: 'SIBC', name: 'SOCIETE IVOIRIENNE DE BANQUE', price: 5400, change: 0.00, volume: 3200, high: 5400, low: 5350, per: '8.7x', cap: 320, sector: 'Banque', country: 'CI', beta: 0.95 },
+  { ticker: 'BOAB', name: 'BANK OF AFRICA BF', price: 7100, change: 2.16, volume: 11200, high: 7150, low: 6950, per: '7.3x', cap: 410, sector: 'Banque', country: 'BF', beta: 0.92 },
+  { ticker: 'PALC', name: 'PALM CI', price: 6800, change: -0.73, volume: 4500, high: 6900, low: 6750, per: '11.0x', cap: 520, sector: 'Agro-industrie', country: 'CI', beta: 0.78 },
+  { ticker: 'SAFC', name: 'SAFCA CI', price: 215, change: 0.94, volume: 8900, high: 218, low: 212, per: '6.8x', cap: 180, sector: 'Finance', country: 'CI', beta: 1.05 },
+  { ticker: 'SGBC', name: 'SG CI', price: 18500, change: 0.54, volume: 2100, high: 18600, low: 18350, per: '9.5x', cap: 680, sector: 'Banque', country: 'CI', beta: 0.88 },
+  { ticker: 'ORAC', name: 'ORANGE CI', price: 2500, change: 1.21, volume: 15600, high: 2520, low: 2470, per: '12.1x', cap: 1450, sector: 'Télécom', country: 'CI', beta: 0.82 },
+  { ticker: 'TTLC', name: 'TOTAL CI', price: 2400, change: -0.42, volume: 3400, high: 2420, low: 2380, per: '8.2x', cap: 290, sector: 'Distribution', country: 'CI', beta: 0.95 },
+  { ticker: 'SLBC', name: 'SOLEIL CI', price: 850, change: 2.41, volume: 12000, high: 860, low: 830, per: '10.5x', cap: 125, sector: 'Agro-industrie', country: 'CI', beta: 0.72 },
+  { ticker: 'NSBC', name: 'NESTLE CI', price: 4200, change: 0.24, volume: 1800, high: 4220, low: 4180, per: '15.3x', cap: 210, sector: 'Agro-industrie', country: 'CI', beta: 0.65 },
+  { ticker: 'CIEC', name: 'CIE CI', price: 225, change: -1.32, volume: 25000, high: 228, low: 222, per: '7.9x', cap: 340, sector: 'Utilities', country: 'CI', beta: 0.55 },
+];
+
+const NEWS = [
+  { time: '11:24', tag: 'SONATEL', txt: 'Publication des résultats semestriels en hausse de 8.2%. Dividende proposé: 1200 XOF/action.', hot: true },
+  { time: '10:05', tag: 'BCEAO', txt: 'Maintien du taux directeur à 3.50%. Inflation zone UEMOA: 3.2% en glissement annuel.', hot: true },
+  { time: '09:30', tag: 'BRVM', txt: 'Recomposition de l\'indice BRVM-30 annoncée pour le T4. 3 valeurs pourraient intégrer l\'indice.', hot: false },
+  { time: '08:45', tag: 'ECOBANK', txt: 'ETIT annonce un partenariat stratégique avec une fintech panafricaine.', hot: false },
+  { time: '08:15', tag: 'PALM CI', txt: 'Production d\'huile de palme en hausse de 12% au S1 2026. Perspectives positives.', hot: false },
+  { time: '07:30', tag: 'BCEAO', txt: 'Croissance économique zone UEMOA révisée à 6.2% pour 2026.', hot: false },
+  { time: 'Veille', tag: 'ORANGE CI', txt: 'Lancement de la 5G à Abidjan. CA mobile data +18% sur le trimestre.', hot: false },
+  { time: 'Veille', tag: 'BOA BF', txt: 'Résultats trimestriels solides. PNB en hausse de 14% sur un an.', hot: false },
+];
+
+// Mapping BRVM → TradingView
+const TV_SYMBOL_MAP = {
+  'SNTS': 'OTC:SNMMF', 'ETIT': 'JSE:EBK', 'SIBC': 'JSE:SBK',
+  'BOAB': 'JSE:ABG', 'PALC': 'JSE:TCP', 'SAFC': 'JSE:TFG',
+  'SGBC': 'JSE:SGG', 'ORAC': 'OTC:ORANF', 'TTLC': 'EPA:FP',
+  'SLBC': 'JSE:SOL', 'NSBC': 'JSE:NPK', 'CIEC': 'JSE:CEH',
+};
+const TV_FALLBACK = 'BINANCE:BTCUSDT';
+
+/* ═══════════════════════════════════════════════════════════════
+   ÉTAT GLOBAL
+   ═══════════════════════════════════════════════════════════════ */
+let selectedTicker = 'SNTS';
+let chart = null, chartBig = null;
+let chartType = 'candle';
+let currentTheme = 'dark';
+let PREDICTIONS = [];
+let TRADES = [];
+let tvWidget = null;
+let monacoEditor = null;
+let pyodide = null;
+let pyodideReady = false;
+
+/* ═══════════════════════════════════════════════════════════════
+   PERSISTANCE LOCALSTORAGE
+   ═══════════════════════════════════════════════════════════════ */
+function saveState() {
+  try {
+    localStorage.setItem('brvm_preds', JSON.stringify(PREDICTIONS));
+    localStorage.setItem('brvm_trades', JSON.stringify(TRADES));
+    localStorage.setItem('brvm_theme', currentTheme);
+    localStorage.setItem('brvm_chart_type', chartType);
+  } catch (e) { console.warn('Save failed:', e); }
+}
+
+function loadState() {
+  try {
+    const p = localStorage.getItem('brvm_preds');
+    if (p) PREDICTIONS = JSON.parse(p);
+    const t = localStorage.getItem('brvm_trades');
+    if (t) TRADES = JSON.parse(t);
+    const th = localStorage.getItem('brvm_theme');
+    if (th) currentTheme = th;
+    const ct = localStorage.getItem('brvm_chart_type');
+    if (ct) chartType = ct;
+  } catch (e) { console.warn('Load failed:', e); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THÈMES & CHART TYPE
+   ═══════════════════════════════════════════════════════════════ */
+function setTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+  document.getElementById('ft-theme').textContent =
+    theme === 'dark' ? 'SOMBRE' : theme === 'blue' ? 'BLEU NUIT' : 'CLAIR';
+  saveState();
+  rebuildCharts();
+  toast('✓ Thème ' + theme);
+}
+
+function setChartType(type) {
+  chartType = type;
+  document.querySelectorAll('.chart-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ct === type);
+  });
+  saveState();
+  rebuildCharts();
+  const labels = { candle: 'Bougies', line: 'Lignes', both: 'Les deux' };
+  toast('✓ Graphique: ' + labels[type]);
+}
+
+function css(v) {
+  return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GÉNÉRATION OHLCV (simulation réaliste)
+   ═══════════════════════════════════════════════════════════════ */
+function generateOHLCV(basePrice, days = 365) {
+  const data = [];
+  let price = basePrice * 0.85;
+  const now = new Date();
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
+    const time = date.toISOString().split('T')[0];
+    const volatility = price * 0.018;
+    const drift = (Math.random() - 0.48) * volatility;
+    const open = price;
+    const close = open + drift;
+    const high = Math.max(open, close) + Math.random() * volatility * 0.6;
+    const low = Math.min(open, close) - Math.random() * volatility * 0.6;
+    const volume = Math.floor(5000 + Math.random() * 20000);
+    data.push({
+      time, open: +open.toFixed(2), high: +high.toFixed(2),
+      low: +low.toFixed(2), close: +close.toFixed(2), volume
+    });
+    price = close;
+  }
+  return data;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHARTS (Lightweight Charts)
+   ═══════════════════════════════════════════════════════════════ */
+function makeChart(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el || !el.offsetHeight) return null;
+  return LightweightCharts.createChart(el, {
+    layout: {
+      background: { type: 'Solid', color: css('--chart-bg') },
+      textColor: css('--text')
+    },
+    grid: {
+      vertLines: { color: css('--chart-grid') },
+      horzLines: { color: css('--chart-grid') }
+    },
+    width: el.clientWidth,
+    height: el.clientHeight,
+    timeScale: { borderColor: css('--border-2') },
+    rightPriceScale: { borderColor: css('--border-2') },
+    crosshair: { mode: 0 }
+  });
+}
+
+function buildChart(containerId, type) {
+  const c = makeChart(containerId);
+  if (!c) return null;
+  const s = STOCKS.find(x => x.ticker === selectedTicker);
+  const data = generateOHLCV(s.price, type === 'main' ? 365 : 730);
+  const up = css('--up'), dn = css('--down'), cy = css('--cyan');
+
+  if (chartType === 'candle' || chartType === 'both') {
+    const cs = c.addCandlestickSeries({
+      upColor: up, downColor: dn,
+      borderUpColor: up, borderDownColor: dn,
+      wickUpColor: up, wickDownColor: dn
+    });
+    cs.setData(data.map(d => ({
+      time: d.time, open: d.open, high: d.high, low: d.low, close: d.close
+    })));
+  }
+  if (chartType === 'line' || chartType === 'both') {
+    const ls = c.addLineSeries({ color: cy, lineWidth: 2 });
+    ls.setData(data.map(d => ({ time: d.time, value: d.close })));
+  }
+  const vs = c.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'vol'
+  });
+  c.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+  vs.setData(data.map(d => ({
+    time: d.time, value: d.volume,
+    color: d.close >= d.open ? up + '60' : dn + '60'
+  })));
+  c.timeScale().fitContent();
+  return c;
+}
+
+function rebuildCharts() {
+  if (chart) { chart.remove(); chart = null; }
+  if (chartBig) { chartBig.remove(); chartBig = null; }
+  chart = buildChart('chart-container', 'main');
+  chartBig = buildChart('chart-big', 'big');
+  if (chartBig) {
+    document.getElementById('chart-sym').textContent = selectedTicker;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   WATCHLIST & TICKER DETAIL
+   ═══════════════════════════════════════════════════════════════ */
+function renderWatchlist() {
+  const body = document.getElementById('wl-body');
+  body.innerHTML = STOCKS.map(s => `
+    <tr data-t="${s.ticker}" class="${s.ticker === selectedTicker ? 'sel' : ''}">
+      <td class="ticker">${s.ticker}</td>
+      <td style="text-align:right;color:var(--text)">${s.price.toLocaleString('fr-FR')}</td>
+      <td style="text-align:right;font-weight:bold" class="${s.change > 0 ? 'up' : s.change < 0 ? 'down' : 'flat'}">
+        ${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%
+      </td>
+    </tr>
+  `).join('');
+  body.querySelectorAll('tr').forEach(tr => {
+    tr.onclick = () => {
+      selectedTicker = tr.dataset.t;
+      renderWatchlist();
+      renderTickerDetail();
+      rebuildCharts();
+    };
+  });
+}
+
+function renderTickerDetail() {
+  const s = STOCKS.find(x => x.ticker === selectedTicker);
+  document.getElementById('t-ticker').textContent = s.ticker + ' GP';
+  document.getElementById('t-name').textContent = s.name;
+  document.getElementById('t-price').textContent = s.price.toLocaleString('fr-FR') + ' XOF';
+  const ch = document.getElementById('t-change');
+  ch.textContent = (s.change >= 0 ? '+' : '') + s.change.toFixed(2) + '%';
+  ch.className = s.change >= 0 ? 'up' : 'down';
+  ch.style.cssText = 'font-size:11px;font-weight:bold;text-align:right';
+  document.getElementById('t-high').textContent = s.high.toLocaleString('fr-FR');
+  document.getElementById('t-low').textContent = s.low.toLocaleString('fr-FR');
+  document.getElementById('t-vol').textContent = s.volume.toLocaleString('fr-FR');
+  document.getElementById('t-per').textContent = s.per;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NEWS
+   ═══════════════════════════════════════════════════════════════ */
+function renderNews() {
+  const sidebar = document.getElementById('news-sb');
+  sidebar.innerHTML = NEWS.slice(0, 4).map(n => `
+    <div class="news-item ${n.hot ? 'hot' : ''}">
+      <span class="time">${n.time}</span> <span class="tag">[${n.tag}]</span>
+      <div class="txt">${n.txt}</div>
+    </div>
+  `).join('');
+  const full = document.getElementById('news-full');
+  full.innerHTML = NEWS.map(n => `
+    <div class="news-item ${n.hot ? 'hot' : ''}" style="margin-bottom:10px">
+      <span class="time">${n.time}</span> <span class="tag">[${n.tag}]</span>
+      <div class="txt" style="margin-top:2px">${n.txt}</div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREDICTIONS
+   ═══════════════════════════════════════════════════════════════ */
+function renderPredictions() {
+  document.getElementById('pred-count').textContent = `(${PREDICTIONS.length} actives)`;
+  const card = p => `
+    <div class="pred-card">
+      <div class="pred-head">
+        <span style="color:var(--cyan)">${p.author}</span>
+        <span class="${p.type === 'BULLISH' ? 'up' : 'down'}">${p.type} · ${p.symbol}</span>
+      </div>
+      <div class="pred-meta">
+        <span>Cible: <strong style="color:var(--text)">${p.target.toLocaleString('fr-FR')}</strong></span>
+        <span>Horizon: ${p.horizon}J · Conf: ${p.conf}%</span>
+      </div>
+      ${p.thesis ? `<div style="color:var(--muted);font-size:10px;margin-top:4px;font-style:italic">${p.thesis}</div>` : ''}
+    </div>
+  `;
+  document.getElementById('pred-sb').innerHTML = PREDICTIONS.slice(0, 3).map(card).join('') || '<p style="color:var(--muted);text-align:center;padding:10px;font-size:10px">Aucune prédiction</p>';
+  document.getElementById('pred-list').innerHTML = PREDICTIONS.length ? PREDICTIONS.map(card).join('') : '<p style="color:var(--muted);text-align:center;padding:20px">Aucune prédiction enregistrée.</p>';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TRADE JOURNAL
+   ═══════════════════════════════════════════════════════════════ */
+function calcTradePnL(trade) {
+  if (trade.type === 'BUY') return 0;
+  // Chercher les achats du même ticker avant cette vente (FIFO)
+  const buys = TRADES.filter(t =>
+    t.ticker === trade.ticker && t.type === 'BUY' && t.date <= trade.date
+  );
+  if (buys.length === 0) return 0;
+  const avgBuy = buys.reduce((s, t) => s + t.price, 0) / buys.length;
+  return (trade.price - avgBuy) * trade.qty - trade.fees;
+}
+
+function renderTrades() {
+  const tbody = document.getElementById('trade-list');
+  if (!TRADES.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Aucune transaction</td></tr>';
+    updateTradeStats();
+    return;
+  }
+  tbody.innerHTML = TRADES.map(t => `
+    <tr>
+      <td>${t.date}</td>
+      <td style="color:var(--cyan);font-weight:bold">${t.ticker}</td>
+      <td style="color:${t.type === 'BUY' ? 'var(--up)' : 'var(--down)'}">${t.type === 'BUY' ? 'ACHAT' : 'VENTE'}</td>
+      <td>${t.qty}</td>
+      <td>${t.price.toLocaleString('fr-FR')}</td>
+      <td>${(t.qty * t.price).toLocaleString('fr-FR')}</td>
+      <td class="${t.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${t.pnl ? ((t.pnl >= 0 ? '+' : '') + t.pnl.toLocaleString('fr-FR')) : '—'}</td>
+    </tr>
+  `).join('');
+  updateTradeStats();
+}
+
+function updateTradeStats() {
+  const sells = TRADES.filter(t => t.type === 'SELL' && t.pnl);
+  const totalPnl = sells.reduce((s, t) => s + t.pnl, 0);
+  const wins = sells.filter(t => t.pnl > 0);
+  const losses = sells.filter(t => t.pnl < 0);
+  const winRate = sells.length ? (wins.length / sells.length * 100) : 0;
+  const avgWin = wins.length ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
+  const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 1;
+  const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+
+  document.getElementById('st-pnl').textContent = totalPnl.toLocaleString('fr-FR') + ' FCFA';
+  document.getElementById('st-pnl').style.color = totalPnl >= 0 ? 'var(--up)' : 'var(--down)';
+  document.getElementById('st-cnt').textContent = TRADES.length;
+  document.getElementById('st-wr').textContent = winRate.toFixed(1) + '%';
+  document.getElementById('st-pf').textContent = profitFactor.toFixed(2);
+
+  // Stats par ticker
+  const byTicker = {};
+  TRADES.forEach(t => {
+    if (!byTicker[t.ticker]) byTicker[t.ticker] = { pnl: 0, trades: 0 };
+    byTicker[t.ticker].trades++;
+    if (t.pnl) byTicker[t.ticker].pnl += t.pnl;
+  });
+  const tbl = document.getElementById('st-by-ticker');
+  const entries = Object.entries(byTicker);
+  if (!entries.length) {
+    tbl.innerHTML = '<p style="color:var(--muted);font-size:11px">Aucune donnée</p>';
+  } else {
+    tbl.innerHTML = `
+      <table class="trade-tbl">
+        <thead><tr><th>TICKER</th><th>TRADES</th><th>P&L</th></tr></thead>
+        <tbody>${entries.map(([tk, d]) => `
+          <tr>
+            <td style="color:var(--cyan);font-weight:bold">${tk}</td>
+            <td>${d.trades}</td>
+            <td class="${d.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${d.pnl ? ((d.pnl >= 0 ? '+' : '') + d.pnl.toLocaleString('fr-FR')) : '—'}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO
+   ═══════════════════════════════════════════════════════════════ */
+function updatePortfolio() {
+  // Calculer positions actuelles
+  const positions = {};
+  TRADES.forEach(t => {
+    if (!positions[t.ticker]) positions[t.ticker] = { qty: 0, cost: 0 };
+    if (t.type === 'BUY') {
+      positions[t.ticker].qty += t.qty;
+      positions[t.ticker].cost += t.qty * t.price;
+    } else {
+      positions[t.ticker].qty -= t.qty;
+    }
+  });
+
+  let totalValue = 0, totalCost = 0;
+  const holdings = [];
+  const sectorMap = {};
+
+  Object.keys(positions).forEach(tk => {
+    const pos = positions[tk];
+    if (pos.qty > 0) {
+      const st = STOCKS.find(x => x.ticker === tk);
+      const currentPrice = st ? st.price : pos.cost / pos.qty;
+      const currentValue = pos.qty * currentPrice;
+      const pnl = currentValue - pos.cost;
+      totalValue += currentValue;
+      totalCost += pos.cost;
+      holdings.push({
+        ticker: tk, qty: pos.qty, avgPrice: pos.cost / pos.qty,
+        currentValue, pnl, pnlPct: pos.cost > 0 ? (pnl / pos.cost * 100) : 0,
+        sector: st ? st.sector : 'Autre', beta: st ? st.beta : 1
+      });
+      if (st) {
+        if (!sectorMap[st.sector]) sectorMap[st.sector] = 0;
+        sectorMap[st.sector] += currentValue;
+      }
+    }
+  });
+
+  const unrealizedPnl = totalValue - totalCost;
+
+  // Métriques
+  document.getElementById('pv-val').textContent = totalValue.toLocaleString('fr-FR') + ' FCFA';
+  document.getElementById('pv-pnl').textContent = (unrealizedPnl >= 0 ? '+' : '') + unrealizedPnl.toLocaleString('fr-FR') + ' FCFA';
+  document.getElementById('pv-pnl').style.color = unrealizedPnl >= 0 ? 'var(--up)' : 'var(--down)';
+
+  // Beta pondéré
+  const beta = holdings.length ?
+    holdings.reduce((s, h) => s + h.beta * (h.currentValue / totalValue), 0) : 0;
+  document.getElementById('pv-beta').textContent = beta.toFixed(2);
+
+  // Sharpe (simplifié)
+  const portfolioReturn = totalCost > 0 ? (unrealizedPnl / totalCost) : 0;
+  const riskFree = 0.03;
+  const vol = 0.15;
+  const sharpe = vol > 0 ? (portfolioReturn - riskFree) / vol : 0;
+  document.getElementById('pv-sharpe').textContent = sharpe.toFixed(2);
+
+  // Holdings table
+  const holdEl = document.getElementById('port-hold');
+  if (!holdings.length) {
+    holdEl.innerHTML = '<p style="color:var(--muted);font-size:11px">Aucune position ouverte. Ajoutez des transactions dans le TRADE JOURNAL (F7).</p>';
+  } else {
+    holdEl.innerHTML = `
+      <table class="trade-tbl">
+        <thead><tr><th>TICKER</th><th>QTY</th><th>PRIX MOYEN</th><th>VALEUR</th><th>P&L</th><th>P&L %</th></tr></thead>
+        <tbody>${holdings.map(h => `
+          <tr>
+            <td style="color:var(--cyan);font-weight:bold">${h.ticker}</td>
+            <td>${h.qty}</td>
+            <td>${h.avgPrice.toLocaleString('fr-FR')}</td>
+            <td>${h.currentValue.toLocaleString('fr-FR')}</td>
+            <td class="${h.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${h.pnl >= 0 ? '+' : ''}${h.pnl.toLocaleString('fr-FR')}</td>
+            <td class="${h.pnlPct >= 0 ? 'pnl-pos' : 'pnl-neg'}">${h.pnlPct >= 0 ? '+' : ''}${h.pnlPct.toFixed(2)}%</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  }
+
+  // Répartition sectorielle
+  const sectorEl = document.getElementById('port-sector');
+  const sectorEntries = Object.entries(sectorMap);
+  if (!sectorEntries.length) {
+    sectorEl.innerHTML = '<p style="color:var(--muted);font-size:11px">Aucune donnée</p>';
+  } else {
+    sectorEl.innerHTML = `
+      <table class="trade-tbl">
+        <thead><tr><th>SECTEUR</th><th>VALEUR</th><th>% PORTFOLIO</th></tr></thead>
+        <tbody>${sectorEntries.map(([sec, val]) => `
+          <tr>
+            <td style="color:var(--cyan);font-weight:bold">${sec}</td>
+            <td>${val.toLocaleString('fr-FR')}</td>
+            <td>${totalValue > 0 ? (val / totalValue * 100).toFixed(1) : 0}%</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  }
+
+  // Risk metrics
+  const var95 = totalValue * vol * 1.645 / Math.sqrt(252);
+  document.getElementById('rk-var').textContent = Math.round(var95).toLocaleString('fr-FR') + ' FCFA';
+  document.getElementById('rk-vol').textContent = (vol * 100).toFixed(1) + '%';
+  document.getElementById('rk-dd').textContent = '-' + (5 + Math.random() * 15).toFixed(1) + '%';
+  document.getElementById('rk-wacc').textContent = (8 + Math.random() * 4).toFixed(1) + '%';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENARIO SIMULATOR
+   ═══════════════════════════════════════════════════════════════ */
+function runScenario() {
+  const shock = parseFloat(document.getElementById('sc-shock').value) / 100;
+  const horizon = parseInt(document.getElementById('sc-horizon').value);
+  const positions = {};
+  TRADES.forEach(t => {
+    if (!positions[t.ticker]) positions[t.ticker] = { qty: 0, cost: 0 };
+    if (t.type === 'BUY') { positions[t.ticker].qty += t.qty; positions[t.ticker].cost += t.qty * t.price; }
+    else positions[t.ticker].qty -= t.qty;
+  });
+
+  let currentValue = 0, totalCost = 0;
+  Object.keys(positions).forEach(tk => {
+    const pos = positions[tk];
+    if (pos.qty > 0) {
+      const st = STOCKS.find(x => x.ticker === tk);
+      const price = st ? st.price : pos.cost / pos.qty;
+      const beta = st ? st.beta : 1;
+      currentValue += pos.qty * price * (1 + shock * beta);
+      totalCost += pos.cost;
+    }
+  });
+
+  const pnl = currentValue - totalCost;
+  const pnlPct = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+
+  document.getElementById('sc-result').innerHTML = `
+    <div style="margin-bottom:8px"><strong style="color:var(--accent)">Choc de ${shock * 100}% sur ${horizon} jours</strong></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur actuelle</span><b>${totalCost.toLocaleString('fr-FR')}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur après choc</span><b style="color:${pnl >= 0 ? 'var(--up)' : 'var(--down)'}">${currentValue.toFixed(0).toLocaleString('fr-FR')}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>P&L estimé</span><b class="${pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(0).toLocaleString('fr-FR')}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Variation</span><b class="${pnlPct >= 0 ? 'pnl-pos' : 'pnl-neg'}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</b></div>
+  `;
+  toast('✓ Simulation terminée');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKTESTING
+   ═══════════════════════════════════════════════════════════════ */
+function runBacktest() {
+  const capital = parseFloat(document.getElementById('bt-cap').value);
+  const strategy = document.getElementById('bt-strat').value;
+  const ticker = document.getElementById('bt-tick').value;
+  const feesPct = parseFloat(document.getElementById('bt-fees').value) / 100;
+  const st = STOCKS.find(x => x.ticker === ticker);
+  const data = generateOHLCV(st.price, 365);
+  const closes = data.map(d => d.close);
+
+  let cash = capital, shares = 0, trades = 0, wins = 0;
+  let maxEquity = capital, maxDD = 0;
+  const equityCurve = [];
+
+  for (let i = 50; i < closes.length; i++) {
+    const price = closes[i];
+    let signal = 0;
+
+    if (strategy === 'sma_cross') {
+      const sma20 = closes.slice(i - 20, i).reduce((a, b) => a + b) / 20;
+      const sma50 = closes.slice(i - 50, i).reduce((a, b) => a + b) / 50;
+      const prevSma20 = closes.slice(i - 21, i - 1).reduce((a, b) => a + b) / 20;
+      const prevSma50 = closes.slice(i - 51, i - 1).reduce((a, b) => a + b) / 50;
+      if (prevSma20 <= prevSma50 && sma20 > sma50) signal = 1;
+      else if (prevSma20 >= prevSma50 && sma20 < sma50) signal = -1;
+    } else if (strategy === 'rsi') {
+      const gains = [], losses = [];
+      for (let j = i - 14; j < i; j++) {
+        const d = closes[j + 1] - closes[j];
+        if (d > 0) gains.push(d); else losses.push(-d);
+      }
+      const avgGain = gains.length ? gains.reduce((a, b) => a + b, 0) / 14 : 0;
+      const avgLoss = losses.length ? losses.reduce((a, b) => a + b, 0) / 14 : 0.001;
+      const rs = avgGain / avgLoss;
+      const rsi = 100 - 100 / (1 + rs);
+      if (rsi < 30) signal = 1;
+      else if (rsi > 70) signal = -1;
+    } else if (strategy === 'momentum') {
+      const mom = (closes[i] - closes[i - 20]) / closes[i - 20] * 100;
+      if (mom > 3) signal = 1;
+      else if (mom < -3) signal = -1;
+    } else if (strategy === 'mean_reversion') {
+      const sma = closes.slice(i - 20, i).reduce((a, b) => a + b) / 20;
+      const variance = closes.slice(i - 20, i).reduce((s, p) => s + Math.pow(p - sma, 2), 0) / 20;
+      const std = Math.sqrt(variance);
+      const upper = sma + 2 * std;
+      const lower = sma - 2 * std;
+      if (price < lower) signal = 1;
+      else if (price > upper) signal = -1;
+    }
+
+    if (signal === 1 && shares === 0 && cash > 0) {
+      const qty = Math.floor(cash / (price * (1 + feesPct)));
+      if (qty > 0) {
+        shares = qty;
+        cash -= qty * price * (1 + feesPct);
+        trades++;
+      }
+    } else if (signal === -1 && shares > 0) {
+      const entryPrice = (capital - cash) / shares / (1 + feesPct);
+      cash += shares * price * (1 - feesPct);
+      if (price > entryPrice) wins++;
+      shares = 0;
+      trades++;
+    }
+
+    const equity = cash + shares * price;
+    equityCurve.push(equity);
+    if (equity > maxEquity) maxEquity = equity;
+    const dd = (maxEquity - equity) / maxEquity;
+    if (dd > maxDD) maxDD = dd;
+  }
+
+  const finalValue = cash + shares * closes[closes.length - 1];
+  const ret = ((finalValue - capital) / capital * 100);
+  const winRate = trades > 0 ? (wins / Math.max(1, Math.floor(trades / 2)) * 100) : 0;
+  const annualizedRet = ret * (252 / closes.length);
+
+  document.getElementById('bt-res').innerHTML = `
+    <div style="margin-bottom:8px"><b style="color:var(--accent)">${strategy}</b> sur <b style="color:var(--cyan)">${ticker}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Capital initial</span><b>${capital.toLocaleString('fr-FR')}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur finale</span><b style="color:${finalValue >= capital ? 'var(--up)' : 'var(--down)'}">${finalValue.toFixed(0).toLocaleString('fr-FR')}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Rendement total</span><b style="color:${ret >= 0 ? 'var(--up)' : 'var(--down)'}">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Rendement annualisé</span><b style="color:${annualizedRet >= 0 ? 'var(--up)' : 'var(--down)'}">${annualizedRet >= 0 ? '+' : ''}${annualizedRet.toFixed(2)}%</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Nombre de trades</span><b>${trades}</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Win Rate</span><b>${winRate.toFixed(0)}%</b></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Max Drawdown</span><b style="color:var(--down)">-${(maxDD * 100).toFixed(2)}%</b></div>
+    <div style="margin-top:12px;color:var(--dim);font-size:9px">⚠ Simulation sur données générées. Ne constitue pas un conseil.</div>
+  `;
+  toast('✓ Backtest terminé');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANALYST (FONDAMENTALE)
+   ═══════════════════════════════════════════════════════════════ */
+function renderAnalyst() {
+  const s = STOCKS.find(x => x.ticker === selectedTicker);
+  document.getElementById('a-title').textContent = s.ticker + ' GP · ' + s.name;
+  document.getElementById('a-fund').innerHTML = `
+    <div class="analyst-card">
+      <h4>MÉTRIQUES CLÉS</h4>
+      <div class="metric"><span class="k">Capitalisation</span><span class="v">${s.cap} Mds FCFA</span></div>
+      <div class="metric"><span class="k">PER</span><span class="v">${s.per}</span></div>
+      <div class="metric"><span class="k">Dividend Yield</span><span class="v" style="color:var(--up)">4.2%</span></div>
+      <div class="metric"><span class="k">PBR</span><span class="v">2.8x</span></div>
+      <div class="metric"><span class="k">ROE</span><span class="v" style="color:var(--up)">18.5%</span></div>
+      <div class="metric"><span class="k">Secteur</span><span class="v">${s.sector}</span></div>
+      <div class="metric"><span class="k">Pays</span><span class="v">${s.country}</span></div>
+    </div>
+    <div class="analyst-card">
+      <h4>CONSENSUS ANALYSTES</h4>
+      <div class="metric"><span class="k">Recommandation</span><span class="v" style="color:var(--up)">ACHAT</span></div>
+      <div class="metric"><span class="k">Buy / Hold / Sell</span><span class="v">7 / 3 / 1</span></div>
+      <div class="metric"><span class="k">Prix cible moyen</span><span class="v" style="color:var(--accent)">${(s.price * 1.08).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">Upside potentiel</span><span class="v" style="color:var(--up)">+8.0%</span></div>
+    </div>
+    <div class="analyst-card">
+      <h4>ANALYSE TECHNIQUE</h4>
+      <div class="metric"><span class="k">RSI (14)</span><span class="v" style="color:var(--up)">58.4</span></div>
+      <div class="metric"><span class="k">MACD</span><span class="v" style="color:var(--up)">BULLISH</span></div>
+      <div class="metric"><span class="k">SMA 20</span><span class="v">${(s.price * 0.97).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">SMA 50</span><span class="v">${(s.price * 0.93).toFixed(0)}</span></div>
+      <div class="metric"><span class="k">Support</span><span class="v">${s.low.toLocaleString('fr-FR')}</span></div>
+      <div class="metric"><span class="k">Résistance</span><span class="v">${(s.price * 1.05).toFixed(0)}</span></div>
+    </div>
+    <div class="analyst-card">
+      <h4>RISQUES & VOLATILITÉ</h4>
+      <div class="metric"><span class="k">Volatilité 30j</span><span class="v">14.2%</span></div>
+      <div class="metric"><span class="k">Beta</span><span class="v">${s.beta}</span></div>
+      <div class="metric"><span class="k">Max Drawdown 1A</span><span class="v" style="color:var(--down)">-12.4%</span></div>
+      <div class="metric"><span class="k">Sharpe Ratio</span><span class="v" style="color:var(--up)">1.24</span></div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TRADINGVIEW WIDGET (ANALYSE TECHNIQUE)
+   ═══════════════════════════════════════════════════════════════ */
+function getTVSymbol(input) {
+  if (input.includes(':')) return input.toUpperCase();
+  return TV_SYMBOL_MAP[input.toUpperCase()] || TV_FALLBACK;
+}
+
+function initTradingViewChart(symbolInput) {
+  const container = document.getElementById('tradingview_analyst_chart');
+  container.innerHTML = '';
+  tvWidget = null;
+  const symbol = getTVSymbol(symbolInput);
+  document.getElementById('tv-current-symbol').textContent = symbol;
+  document.getElementById('tv-symbol-input').value = symbol;
+
+  setTimeout(() => {
+    try {
+      tvWidget = new TradingView.widget({
+        autosize: true, symbol: symbol, interval: "D",
+        timezone: "Africa/Abidjan", theme: "dark", style: "1",
+        locale: "fr", toolbar_bg: "#0a0a0a",
+        enable_publishing: false,
+        hide_top_toolbar: false, hide_legend: false,
+        hide_side_toolbar: false,
+        allow_symbol_change: true, save_image: true,
+        container_id: "tradingview_analyst_chart",
+        studies: ["RSI@tv-basicstudies", "MASimple@tv-basicstudies"],
+        overrides: {
+          "paneProperties.background": "#000000",
+          "paneProperties.backgroundType": "solid",
+          "paneProperties.vertGridProperties.color": "#1a1a1a",
+          "paneProperties.horzGridProperties.color": "#1a1a1a",
+          "scalesProperties.textColor": "#d1d4dc",
+          "mainSeriesProperties.candleStyle.upColor": "#00ff66",
+          "mainSeriesProperties.candleStyle.downColor": "#ff3333",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#00ff66",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ff3333"
+        },
+        loading_screen: { backgroundColor: "#000000", foregroundColor: "#ff9900" }
+      });
+      toast('✓ ' + symbol + ' chargé');
+    } catch (e) {
+      container.innerHTML = `<div style="padding:20px;color:var(--down)">Erreur: ${e.message}</div>`;
+    }
+  }, 100);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PYTHON EDITOR (Pyodide + Monaco)
+   ═══════════════════════════════════════════════════════════════ */
+const PYTHON_TEMPLATES = {
+  sma: `# ═══════════════════════════════════════════════════════════
+# MODÈLE: Moyenne Mobile Simple (SMA)
+# ═══════════════════════════════════════════════════════════
+
+import json
+from brvm_api import get_ohlcv_data, create_prediction
+
+TICKER = "SNTS"
+PERIOD = 20
+HORIZON_DAYS = 14
+CONFIDENCE = 75
+
+data = get_ohlcv_data(TICKER, days=100)
+closes = [d['close'] for d in data]
+
+sma = sum(closes[-PERIOD:]) / PERIOD
+current_price = closes[-1]
+
+if current_price > sma * 1.02:
+    direction = "LONG"
+    target = current_price * 1.08
+elif current_price < sma * 0.98:
+    direction = "SHORT"
+    target = current_price * 0.92
+else:
+    direction = "LONG"
+    target = current_price * 1.05
+
+pred = create_prediction(
+    author="SMA_Model",
+    symbol=TICKER,
+    direction=direction,
+    target_price=target,
+    horizon_days=HORIZON_DAYS,
+    confidence=CONFIDENCE,
+    thesis=f"SMA{PERIOD}: {sma:.2f}, Prix actuel: {current_price:.2f}"
+)
+
+print(f"✓ Prédiction créée: {direction} {TICKER} à {target:.2f}")
+print(f"  SMA{PERIOD}: {sma:.2f}")
+print(f"  Prix actuel: {current_price:.2f}")
+`,
+
+  rsi: `# ═══════════════════════════════════════════════════════════
+# MODÈLE: RSI (Relative Strength Index)
+# ═══════════════════════════════════════════════════════════
+
+import json
+from brvm_api import get_ohlcv_data, create_prediction
+
+def calculate_rsi(prices, period=14):
+    deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+    gains = [d if d > 0 else 0 for d in deltas]
+    losses = [-d if d < 0 else 0 for d in deltas]
+    avg_gain = sum(gains[-period:]) / period
+    avg_loss = sum(losses[-period:]) / period
+    if avg_loss == 0: return 100
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+TICKER = "SNTS"
+RSI_PERIOD = 14
+HORIZON_DAYS = 7
+CONFIDENCE = 80
+
+data = get_ohlcv_data(TICKER, days=100)
+closes = [d['close'] for d in data]
+rsi = calculate_rsi(closes, RSI_PERIOD)
+current_price = closes[-1]
+
+if rsi < 30:
+    direction, target = "LONG", current_price * 1.10
+    thesis = f"RSI en survente ({rsi:.1f}), rebond attendu"
+elif rsi > 70:
+    direction, target = "SHORT", current_price * 0.90
+    thesis = f"RSI en surachat ({rsi:.1f}), correction attendue"
+else:
+    direction, target = "LONG", current_price * 1.05
+    thesis = f"RSI neutre ({rsi:.1f}), tendance haussière modérée"
+
+pred = create_prediction(
+    author="RSI_Model", symbol=TICKER, direction=direction,
+    target_price=target, horizon_days=HORIZON_DAYS,
+    confidence=CONFIDENCE, thesis=thesis
+)
+
+print(f"✓ Prédiction créée: {direction} {TICKER}")
+print(f"  RSI({RSI_PERIOD}): {rsi:.1f}")
+print(f"  Prix actuel: {current_price:.2f}")
+print(f"  Cible: {target:.2f}")
+`,
+
+  momentum: `# ═══════════════════════════════════════════════════════════
+# MODÈLE: Momentum
+# ═══════════════════════════════════════════════════════════
+
+import json
+from brvm_api import get_ohlcv_data, create_prediction
+
+TICKER = "SNTS"
+LOOKBACK_DAYS = 20
+HORIZON_DAYS = 10
+CONFIDENCE = 70
+
+data = get_ohlcv_data(TICKER, days=100)
+closes = [d['close'] for d in data]
+current_price = closes[-1]
+price_lookback = closes[-LOOKBACK_DAYS]
+momentum = ((current_price - price_lookback) / price_lookback) * 100
+
+if momentum > 5:
+    direction, target = "LONG", current_price * (1 + momentum/100)
+    thesis = f"Fort momentum haussier: +{momentum:.1f}% sur {LOOKBACK_DAYS}j"
+elif momentum < -5:
+    direction, target = "SHORT", current_price * (1 + momentum/100)
+    thesis = f"Fort momentum baissier: {momentum:.1f}% sur {LOOKBACK_DAYS}j"
+else:
+    direction, target = "LONG", current_price * 1.03
+    thesis = f"Momentum modéré: {momentum:.1f}% sur {LOOKBACK_DAYS}j"
+
+pred = create_prediction(
+    author="Momentum_Model", symbol=TICKER, direction=direction,
+    target_price=target, horizon_days=HORIZON_DAYS,
+    confidence=CONFIDENCE, thesis=thesis
+)
+
+print(f"✓ Prédiction créée: {direction} {TICKER}")
+print(f"  Momentum {LOOKBACK_DAYS}j: {momentum:.2f}%")
+print(f"  Prix actuel: {current_price:.2f}")
+print(f"  Cible: {target:.2f}")
+`,
+
+  mean_reversion: `# ═══════════════════════════════════════════════════════════
+# MODÈLE: Mean Reversion (Bollinger)
+# ═══════════════════════════════════════════════════════════
+
+import json, math
+from brvm_api import get_ohlcv_data, create_prediction
+
+def calculate_bollinger(prices, period=20, num_std=2):
+    sma = sum(prices[-period:]) / period
+    variance = sum((p - sma) ** 2 for p in prices[-period:]) / period
+    std_dev = math.sqrt(variance)
+    return sma, sma + num_std * std_dev, sma - num_std * std_dev
+
+TICKER = "SNTS"
+BB_PERIOD = 20
+BB_STD = 2
+HORIZON_DAYS = 7
+CONFIDENCE = 75
+
+data = get_ohlcv_data(TICKER, days=100)
+closes = [d['close'] for d in data]
+sma, upper, lower = calculate_bollinger(closes, BB_PERIOD, BB_STD)
+current_price = closes[-1]
+
+if current_price > upper:
+    direction, target = "SHORT", sma
+    thesis = f"Prix au-dessus de BB sup ({upper:.2f}), retour vers moyenne ({sma:.2f})"
+elif current_price < lower:
+    direction, target = "LONG", sma
+    thesis = f"Prix en-dessous de BB inf ({lower:.2f}), retour vers moyenne ({sma:.2f})"
+else:
+    direction, target = "LONG", upper
+    thesis = f"Prix dans les bandes, tendance vers BB sup ({upper:.2f})"
+
+pred = create_prediction(
+    author="MeanReversion_Model", symbol=TICKER, direction=direction,
+    target_price=target, horizon_days=HORIZON_DAYS,
+    confidence=CONFIDENCE, thesis=thesis
+)
+
+print(f"✓ Prédiction créée: {direction} {TICKER}")
+print(f"  BB SMA: {sma:.2f}, Sup: {upper:.2f}, Inf: {lower:.2f}")
+print(f"  Prix actuel: {current_price:.2f}")
+print(f"  Cible: {target:.2f}")
+`
+};
+
+function initMonacoEditor() {
+  require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+  require(['vs/editor/editor.main'], function() {
+    monaco.editor.defineTheme('brvm-dark', {
+      base: 'vs-dark', inherit: true,
+      rules: [
+        { token: 'comment', foreground: '666666' },
+        { token: 'keyword', foreground: 'ff9900' },
+        { token: 'string', foreground: '00e5ff' },
+        { token: 'number', foreground: '00ff66' },
+        { token: 'function', foreground: 'ff9900' }
+      ],
+      colors: {
+        'editor.background': '#000000',
+        'editor.foreground': '#d1d4dc',
+        'editorLineNumber.foreground': '#666666',
+        'editorCursor.foreground': '#ff9900'
+      }
+    });
+    monacoEditor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
+      value: PYTHON_TEMPLATES.sma,
+      language: 'python',
+      theme: 'brvm-dark',
+      automaticLayout: true,
+      fontSize: 12,
+      fontFamily: 'JetBrains Mono, monospace',
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      lineNumbers: 'on'
+    });
+  });
+}
+
+async function initPyodide() {
+  const statusEl = document.getElementById('py-status');
+  const overlay = document.getElementById('loading-overlay');
+  try {
+    overlay.classList.add('show');
+    statusEl.textContent = 'Pyodide: Chargement...';
+    pyodide = await loadPyodide({
+      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+    });
+    await pyodide.runPythonAsync(`
+import json, sys, random
+
+class BRVMAPI:
+    @staticmethod
+    def get_ohlcv_data(ticker, days=100):
+        base_prices = {'SNTS': 17500, 'ETIT': 19, 'SIBC': 5400, 'BOAB': 7100, 'PALC': 6800, 'ORAC': 2500}
+        base = base_prices.get(ticker, 5000)
+        data = []
+        price = base * 0.85
+        for i in range(days, 0, -1):
+            volatility = price * 0.018
+            drift = (random.random() - 0.48) * volatility
+            open_p = price
+            close_p = open_p + drift
+            high_p = max(open_p, close_p) + random.random() * volatility * 0.6
+            low_p = min(open_p, close_p) - random.random() * volatility * 0.6
+            data.append({'time': f'2026-{(i % 12) + 1:02d}-{(i % 28) + 1:02d}',
+                        'open': round(open_p, 2), 'high': round(high_p, 2),
+                        'low': round(low_p, 2), 'close': round(close_p, 2),
+                        'volume': random.randint(5000, 20000)})
+            price = close_p
+        return data
+
+    @staticmethod
+    def create_prediction(author, symbol, direction, target_price, horizon_days, confidence, thesis=""):
+        pred = {'id': len(predictions) + 1, 'author': author, 'symbol': symbol,
+                'direction': direction, 'target_price': target_price,
+                'horizon_days': horizon_days, 'confidence': confidence,
+                'thesis': thesis, 'status': 'active'}
+        predictions.append(pred)
+        return pred
+
+class brvm_api:
+    get_ohlcv_data = BRVMAPI.get_ohlcv_data
+    create_prediction = BRVMAPI.create_prediction
+
+predictions = []
+
+class OutputCapture:
+    def __init__(self): self.output = []
+    def write(self, text): self.output.append(text)
+    def flush(self): pass
+    def get_output(self): return ''.join(self.output)
+
+output_capture = OutputCapture()
+sys.stdout = output_capture
+    `);
+    pyodideReady = true;
+    statusEl.textContent = 'Pyodide: ✓ Prêt';
+    statusEl.style.color = 'var(--up)';
+    overlay.classList.remove('show');
+    appendToConsole('✓ Environnement Python prêt', 'success');
+    appendToConsole('  Tapez votre code et cliquez sur ▶ EXÉCUTER', 'info');
+  } catch (e) {
+    statusEl.textContent = 'Pyodide: ✗ Erreur';
+    statusEl.style.color = 'var(--down)';
+    overlay.classList.remove('show');
+    appendToConsole('✗ Erreur Pyodide: ' + e.message, 'error');
+  }
+}
+
+async function runPythonCode() {
+  if (!pyodideReady) {
+    appendToConsole('✗ Pyodide pas encore prêt...', 'error');
+    return;
+  }
+  const code = monacoEditor.getValue();
+  appendToConsole('\n▶ Exécution du code...', 'info');
+  try {
+    await pyodide.runPythonAsync('output_capture.output = []');
+    await pyodide.runPythonAsync(code);
+    const output = await pyodide.runPythonAsync('output_capture.get_output()');
+    if (output.trim()) appendToConsole(output, 'success');
+    const preds = await pyodide.runPythonAsync('json.dumps(predictions)');
+    const newPreds = JSON.parse(preds);
+    if (newPreds.length > PREDICTIONS.length) {
+      const added = newPreds.length - PREDICTIONS.length;
+      appendToConsole(`\n✓ ${added} prédiction(s) ajoutée(s)`, 'success');
+      PREDICTIONS = newPreds.map(p => ({
+        author: p.author, symbol: p.symbol, dir: p.direction,
+        target: p.target_price, horizon: p.horizon_days,
+        conf: p.confidence, thesis: p.thesis,
+        type: p.direction === 'LONG' ? 'BULLISH' : 'BEARISH'
+      }));
+      renderPredictions();
+      saveState();
+    }
+  } catch (e) {
+    appendToConsole('✗ Erreur: ' + e.message, 'error');
+  }
+}
+
+function appendToConsole(text, className = '') {
+  const cons = document.getElementById('python-console');
+  const line = document.createElement('div');
+  line.className = 'out-line ' + className;
+  line.textContent = text;
+  cons.appendChild(line);
+  cons.scrollTop = cons.scrollHeight;
+}
+
+function loadSavedModels() {
+  const models = JSON.parse(localStorage.getItem('brvm_python_models') || '{}');
+  const select = document.getElementById('py-saved-models');
+  select.innerHTML = '<option value="">-- Modèles sauvegardés --</option>';
+  Object.keys(models).forEach(name => {
+    select.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════ */
+function switchView(viewId) {
+  document.querySelectorAll('.fkey').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === viewId));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById('view-' + viewId);
+  if (target) target.classList.add('active');
+
+  const mainGrid = document.getElementById('main-grid');
+  mainGrid.classList.remove('fs');
+
+  if (viewId === 'analyst') renderAnalyst();
+  if (viewId === 'journal') renderTrades();
+  if (viewId === 'portfolio') updatePortfolio();
+  if (viewId === 'charts' && chartBig) setTimeout(() => rebuildCharts(), 50);
+}
+
+document.querySelectorAll('.fkey').forEach(btn => {
+  btn.onclick = () => switchView(btn.dataset.view);
+});
+
+document.addEventListener('keydown', e => {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  const map = {
+    F1: 'equity', F2: 'news', F3: 'calc', F4: 'quant',
+    F5: 'charts', F6: 'analyst', F7: 'journal', F8: 'portfolio'
+  };
+  if (map[e.key]) { e.preventDefault(); switchView(map[e.key]); }
+});
+
+// Sub-tabs génériques
+document.querySelectorAll('.subtabs').forEach(group => {
+  group.querySelectorAll('.subtab').forEach(tab => {
+    tab.onclick = () => {
+      group.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const content = group.nextElementSibling;
+      content.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+      const paneMap = {
+        manual: 'qp-manual', python: 'qp-python',
+        fund: 'ap-fund', tech: 'ap-tech',
+        trades: 'jp-trades', jstats: 'jp-jstats',
+        overview: 'pp-overview', risk: 'pp-risk', bt: 'pp-bt'
+      };
+      const paneId = paneMap[tab.dataset.pane];
+      if (paneId) {
+        const el = document.getElementById(paneId);
+        if (el) el.classList.add('active');
+      }
+      if (tab.dataset.pane === 'python' && !pyodideReady) initPyodide();
+      if (tab.dataset.pane === 'tech') {
+        document.getElementById('main-grid').classList.add('fs');
+        setTimeout(() => initTradingViewChart(selectedTicker), 350);
+      }
+    };
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   FORMULAIRES
+   ═══════════════════════════════════════════════════════════════ */
+document.getElementById('cmd-form').onsubmit = e => {
+  e.preventDefault();
+  const cmd = document.getElementById('cmd-input').value.trim().toUpperCase();
+  if (!cmd) return;
+  const f = STOCKS.find(s => s.ticker === cmd);
+  if (f) {
+    selectedTicker = cmd;
+    renderWatchlist();
+    renderTickerDetail();
+    rebuildCharts();
+    switchView('equity');
+    toast('✓ ' + cmd + ' chargé');
+  } else {
+    toast('✗ ' + cmd + ' introuvable');
+  }
+  document.getElementById('cmd-input').value = '';
+};
+
+document.getElementById('pred-form').onsubmit = e => {
+  e.preventDefault();
+  PREDICTIONS.unshift({
+    author: document.getElementById('p-auth').value,
+    symbol: document.getElementById('p-sym').value,
+    dir: document.getElementById('p-dir').value,
+    target: parseFloat(document.getElementById('p-target').value),
+    horizon: parseInt(document.getElementById('p-horiz').value),
+    conf: parseInt(document.getElementById('p-conf').value),
+    thesis: document.getElementById('p-thesis').value,
+    type: document.getElementById('p-dir').value === 'LONG' ? 'BULLISH' : 'BEARISH'
+  });
+  renderPredictions();
+  saveState();
+  e.target.reset();
+  toast('✓ Prédiction enregistrée');
+};
+
+document.getElementById('trade-form').onsubmit = e => {
+  e.preventDefault();
+  const tr = {
+    date: document.getElementById('tr-date').value,
+    ticker: document.getElementById('tr-tick').value,
+    type: document.getElementById('tr-type').value,
+    qty: parseInt(document.getElementById('tr-qty').value),
+    price: parseFloat(document.getElementById('tr-price').value),
+    fees: parseFloat(document.getElementById('tr-fees').value) || 0,
+    notes: document.getElementById('tr-notes').value,
+    pnl: 0
+  };
+  tr.pnl = calcTradePnL(tr);
+  TRADES.push(tr);
+  renderTrades();
+  saveState();
+  e.target.reset();
+  toast('✓ Transaction enregistrée');
+};
+
+document.getElementById('calc-btn').onclick = () => {
+  const a = parseFloat(document.getElementById('calc-amt').value);
+  const m = parseInt(document.getElementById('calc-mo').value);
+  const r = parseFloat(document.getElementById('calc-rate').value);
+  document.getElementById('calc-out').textContent =
+    Math.round(a * Math.pow(1 + r / 100, m / 12)).toLocaleString('fr-FR') + ' FCFA';
+};
+
+document.getElementById('bt-run').onclick = runBacktest;
+document.getElementById('sc-run').onclick = runScenario;
+
+// TradingView toolbar
+document.getElementById('tv-load-btn').onclick = () => {
+  const input = document.getElementById('tv-symbol-input').value.trim();
+  if (input) initTradingViewChart(input);
+};
+document.getElementById('tv-symbol-input').onkeypress = e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const input = e.target.value.trim();
+    if (input) initTradingViewChart(input);
+  }
+};
+document.querySelectorAll('.tech-toolbar .preset-group button').forEach(btn => {
+  btn.onclick = () => initTradingViewChart(btn.dataset.preset);
+});
+
+// Python editor
+document.getElementById('py-run').onclick = runPythonCode;
+document.getElementById('py-save').onclick = () => {
+  const name = prompt('Nom du modèle:');
+  if (name) {
+    const code = monacoEditor.getValue();
+    const models = JSON.parse(localStorage.getItem('brvm_python_models') || '{}');
+    models[name] = code;
+    localStorage.setItem('brvm_python_models', JSON.stringify(models));
+    appendToConsole('✓ Modèle "' + name + '" sauvegardé', 'success');
+    loadSavedModels();
+  }
+};
+document.getElementById('py-clear').onclick = () => {
+  if (confirm('Effacer le code ?')) monacoEditor.setValue('');
+};
+document.getElementById('console-clear').onclick = () => {
+  document.getElementById('python-console').innerHTML = '';
+};
+document.getElementById('py-templates').onchange = e => {
+  const t = e.target.value;
+  if (t && PYTHON_TEMPLATES[t]) {
+    monacoEditor.setValue(PYTHON_TEMPLATES[t]);
+    appendToConsole('✓ Template "' + t + '" chargé', 'info');
+  }
+};
+document.getElementById('py-saved-models').onchange = e => {
+  const name = e.target.value;
+  if (name) {
+    const models = JSON.parse(localStorage.getItem('brvm_python_models') || '{}');
+    if (models[name]) {
+      monacoEditor.setValue(models[name]);
+      appendToConsole('✓ Modèle "' + name + '" chargé', 'info');
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS MODAL
+   ═══════════════════════════════════════════════════════════════ */
+document.getElementById('settings-btn').onclick = () =>
+  document.getElementById('settings-modal').classList.add('show');
+document.getElementById('modal-close').onclick = () =>
+  document.getElementById('settings-modal').classList.remove('show');
+document.getElementById('settings-modal').onclick = e => {
+  if (e.target.id === 'settings-modal') e.target.classList.remove('show');
+};
+document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
+  btn.onclick = () => setTheme(btn.dataset.theme);
+});
+document.querySelectorAll('.chart-btn').forEach(btn => {
+  btn.onclick = () => setChartType(btn.dataset.ct);
+});
+
+// Export/Import/Reset
+document.getElementById('export-data').onclick = () => {
+  const data = {
+    predictions: PREDICTIONS,
+    trades: TRADES,
+    theme: currentTheme,
+    chartType: chartType,
+    exportDate: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'brvm-terminal-data-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ Données exportées');
+};
+
+document.getElementById('import-data').onclick = () =>
+  document.getElementById('import-file').click();
+
+document.getElementById('import-file').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (data.predictions) PREDICTIONS = data.predictions;
+      if (data.trades) TRADES = data.trades;
+      if (data.theme) setTheme(data.theme);
+      if (data.chartType) setChartType(data.chartType);
+      saveState();
+      renderPredictions();
+      renderTrades();
+      toast('✓ Données importées');
+    } catch (err) {
+      toast('✗ Erreur import: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+};
+
+document.getElementById('reset-data').onclick = () => {
+  if (confirm('⚠️ Effacer TOUTES les données (prédictions, trades, modèles) ?')) {
+    PREDICTIONS = [];
+    TRADES = [];
+    localStorage.clear();
+    renderPredictions();
+    renderTrades();
+    loadSavedModels();
+    toast('✓ Données effacées');
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILS
+   ═══════════════════════════════════════════════════════════════ */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('fr-FR', { hour12: false });
+}, 1000);
+
+document.getElementById('refresh-btn').onclick = () => {
+  STOCKS.forEach(s => {
+    const d = (Math.random() - 0.5) * 0.4;
+    s.change = +(s.change + d).toFixed(2);
+    s.price = Math.round(s.price * (1 + d / 100));
+  });
+  renderWatchlist();
+  renderTickerDetail();
+  toast('⟳ Watchlist rafraîchie');
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   INITIALISATION
+   ═══════════════════════════════════════════════════════════════ */
+window.onload = () => {
+  loadState();
+  setTheme(currentTheme);
+  setChartType(chartType);
+  document.getElementById('tr-date').value = new Date().toISOString().split('T')[0];
+  renderWatchlist();
+  renderTickerDetail();
+  renderNews();
+  renderPredictions();
+  renderTrades();
+  rebuildCharts();
+  initMonacoEditor();
+  loadSavedModels();
+};
+
+window.onresize = () => rebuildCharts();
+</script>
+</body>
+</html>
