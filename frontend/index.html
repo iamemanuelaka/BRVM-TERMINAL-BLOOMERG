@@ -2630,6 +2630,10 @@ window.onload = async () => {
   window.STOCKS = market.stocks;
   console.log(`[Market] ✓ ${market.stocks.length} tickers chargés`);
 
+  // Charger les news
+  await newsManager.load();
+  renderNews();
+
   await predictionsManager.load();
   window.PREDICTIONS = predictionsManager.getAll();
   console.log(`[Predictions] ✓ ${predictionsManager.getAll().length} prédictions`);
