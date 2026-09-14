@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRVM TERMINAL · Phase 2C · Auth</title>
+<title>BRVM TERMINAL · Phase 3 · Backtest & Auto</title>
 
 <!-- LIBRAIRIES EXTERNES -->
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
@@ -172,7 +172,7 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
 .tf-btns span { cursor: pointer; padding: 2px 4px; }
 .tf-btns span:hover { color: var(--accent); }
 .tf-btns span.active { color: var(--accent); font-weight: bold; }
-#chart-container, #chart-big {
+#chart-container, #chart-big, #chart-container-backtest {
   flex: 1; width: 100%;
   background: var(--chart-bg); border: 1px solid var(--chart-grid);
 }
@@ -198,6 +198,7 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   letter-spacing: 1px; width: 100%;
 }
 .btn:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-sm { width: auto; padding: 3px 10px; font-size: 10px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
@@ -524,7 +525,6 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
   border: 1px solid var(--accent);
 }
 
-/* Ajustement du titre pour accueillir le badge */
 .ticker-head h1 {
   display: flex;
   align-items: center;
@@ -673,7 +673,7 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
     <div class="logo">BRVM TERMINAL</div>
     <form class="cmd-form" id="cmd-form">
       <span class="prompt">&gt;</span>
-      <input type="text" id="cmd-input" placeholder="Ticker (ex: SNTS) ou commande...">
+      <input type="text" id="cmd-input" placeholder="Ticker (ex: SNTS, AAPL) ou commande...">
     </form>
     <div class="market-info">
       <div>BRVM-10: <span class="idx-up">108.42 (+0.35%)</span></div>
@@ -772,18 +772,17 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
     </div>
 
     <!-- F2 NEWS -->
-    <!-- F2 NEWS -->
-<div class="view" id="view-news">
-  <div class="panel">
-    <div class="panel-head muted">
-      <span>📰 ACTUALITÉS BRVM / UEMOA / BCEAO</span>
-      <span style="color:var(--accent)">LIVE</span>
+    <div class="view" id="view-news">
+      <div class="panel">
+        <div class="panel-head muted">
+          <span>📰 ACTUALITÉS BRVM / UEMOA / BCEAO</span>
+          <span style="color:var(--accent)">LIVE</span>
+        </div>
+        <div class="panel-body" id="news-full" style="padding:12px">
+          <div style="text-align:center;padding:40px;color:var(--muted)">Chargement...</div>
+        </div>
+      </div>
     </div>
-    <div class="panel-body" id="news-full" style="padding:12px">
-      <div style="text-align:center;padding:40px;color:var(--muted)">Chargement...</div>
-    </div>
-  </div>
-</div>
 
     <!-- F3 CALC -->
     <div class="view" id="view-calc">
@@ -1158,62 +1157,85 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
               </div>
             </div>
           </div>
+          
+          <!-- F8 BACKTESTING (MIS À JOUR) -->
           <div class="pane" id="pp-bt">
-            <div style="padding:12px">
-              <h4 style="color:var(--accent);font-size:11px;margin-bottom:12px">BACKTESTING DE STRATÉGIE</h4>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div>
+            <div style="padding:12px;overflow-y:auto;height:100%">
+              <h4 style="color:var(--accent);font-size:11px;margin-bottom:12px">🔬 MOTEUR DE BACKTESTING AVANCÉ</h4>
+              <div style="display:grid;grid-template-columns:300px 1fr;gap:12px">
+                
+                <!-- PANNEAU DE CONFIGURATION -->
+                <div style="background:var(--panel-2);padding:12px;border:1px solid var(--border-2)">
                   <div class="form-row">
                     <label>Stratégie</label>
                     <select id="bt-strat">
                       <option value="sma_cross">Croisement SMA (20/50)</option>
-                      <option value="rsi">RSI Overbought/Oversold</option>
+                      <option value="rsi">RSI Surachat/Survente (14)</option>
                       <option value="momentum">Momentum 20 jours</option>
-                      <option value="mean_reversion">Mean Reversion (Bollinger)</option>
                     </select>
                   </div>
                   <div class="form-row">
-                    <label>Ticker</label>
-                    <select id="bt-tick">
-                      <option>SNTS</option><option>ETIT</option><option>SIBC</option>
-                      <option>BOAB</option><option>PALC</option><option>ORAC</option>
-                    </select>
+                    <label>Ticker (ex: AAPL, SNTS, BTC-USD)</label>
+                    <input type="text" id="bt-tick" value="AAPL" placeholder="Symbole Yahoo Finance">
                   </div>
                   <div class="form-grid">
-                    <div class="form-row"><label>Date début</label><input type="date" id="bt-start" value="2025-01-01"></div>
-                    <div class="form-row"><label>Date fin</label><input type="date" id="bt-end" value="2026-09-14"></div>
+                    <div class="form-row"><label>Début</label><input type="date" id="bt-start" value="2022-01-01"></div>
+                    <div class="form-row"><label>Fin</label><input type="date" id="bt-end" value="2026-09-14"></div>
                   </div>
-                  <div class="form-row"><label>Capital initial (FCFA)</label><input type="number" id="bt-cap" value="10000000"></div>
+                  <div class="form-row"><label>Capital initial (FCFA/USD)</label><input type="number" id="bt-cap" value="10000000"></div>
                   <div class="form-row"><label>Frais par trade (%)</label><input type="number" id="bt-fees" value="0.5" step="0.1"></div>
-                  <button class="btn" id="bt-run">LANCER LE BACKTEST</button>
+                  <button class="btn" id="bt-run" style="margin-top:8px">🚀 LANCER LE BACKTEST</button>
                 </div>
+
+                <!-- PANNEAU DE RÉSULTATS -->
                 <div>
-                  <h4 style="color:var(--cyan);font-size:11px;margin-bottom:8px">RÉSULTATS</h4>
-                  <div id="bt-res" style="background:var(--panel-2);padding:12px;border:1px solid var(--border-2);min-height:300px;color:var(--muted);font-size:11px">
-                    <p>Lancez un backtest pour voir les résultats.</p>
+                  <!-- Métriques -->
+                  <div id="bt-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+                    <div class="pcard"><div class="lb">RENDEMENT TOTAL</div><div class="vl" id="m-return">—</div></div>
+                    <div class="pcard"><div class="lb">BUY & HOLD</div><div class="vl" id="m-bh">—</div></div>
+                    <div class="pcard"><div class="lb">SHARPE RATIO</div><div class="vl" id="m-sharpe">—</div></div>
+                    <div class="pcard"><div class="lb">MAX DRAWDOWN</div><div class="vl" id="m-dd" style="color:var(--down)">—</div></div>
+                    <div class="pcard"><div class="lb">WIN RATE</div><div class="vl" id="m-wr">—</div></div>
+                    <div class="pcard"><div class="lb">PROFIT FACTOR</div><div class="vl" id="m-pf">—</div></div>
+                    <div class="pcard"><div class="lb">NOMBRE DE TRADES</div><div class="vl" id="m-trades">—</div></div>
+                  </div>
+                  
+                  <!-- Graphique d'Équité -->
+                  <div style="background:var(--panel-2);border:1px solid var(--border-2);padding:8px">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                      <span style="color:var(--muted);font-size:10px">COURBE D'ÉQUITÉ (Strategy vs Buy & Hold)</span>
+                      <div style="display:flex;gap:12px;font-size:10px">
+                        <span style="color:var(--accent)">■ Stratégie</span>
+                        <span style="color:var(--cyan)">■ Buy & Hold</span>
+                      </div>
+                    </div>
+                    <div id="chart-container-backtest" style="width:100%;height:300px;background:var(--bg)"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
+
     <!-- F9 PROFIL (Accessible via Leaderboard) -->
-<div class="view" id="view-profile">
-  <div class="panel">
-    <div class="panel-head cyan">
-      <span>👤 PROFIL TRADER</span>
-      <button class="btn btn-sm" onclick="switchView('quant')" style="width:auto;padding:3px 10px">← RETOUR AU LEADERBOARD</button>
-    </div>
-    <div class="panel-body" id="profile-content" style="padding:16px">
-      <div style="text-align:center;padding:40px;color:var(--muted)">
-        <div class="spinner" style="margin:0 auto 16px auto"></div>
-        Chargement du profil...
+    <div class="view" id="view-profile">
+      <div class="panel">
+        <div class="panel-head cyan">
+          <span>👤 PROFIL TRADER</span>
+          <button class="btn btn-sm" onclick="switchView('quant')" style="width:auto;padding:3px 10px">← RETOUR AU LEADERBOARD</button>
+        </div>
+        <div class="panel-body" id="profile-content" style="padding:16px">
+          <div style="text-align:center;padding:40px;color:var(--muted)">
+            <div class="spinner" style="margin:0 auto 16px auto"></div>
+            Chargement du profil...
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+
     <!-- SIDEBAR DROITE -->
     <div class="panel sidebar-right">
       <div class="panel-head cyan" style="font-size:10px">
@@ -1237,7 +1259,7 @@ table.watch tr.sel { background: var(--panel-3); border-left: 2px solid var(--ac
       USER: <span class="w" id="ft-user">ANONYME</span> ·
       THÈME: <span class="w" id="ft-theme">SOMBRE</span>
     </div>
-    <div>BRVM TERMINAL v3.1 · PHASE 2C AUTH</div>
+    <div>BRVM TERMINAL v3.2 · PHASE 3 BACKTEST & AUTO</div>
   </div>
 
 </div>
@@ -1414,7 +1436,7 @@ function css(v) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GÉNÉRATION OHLCV
+   GÉNÉRATION OHLCV (Fallback)
    ═══════════════════════════════════════════════════════════════ */
 function generateOHLCV(basePrice, days = 365) {
   const data = [];
@@ -1559,6 +1581,7 @@ function renderTickerDetail() {
   document.getElementById('t-vol').textContent = (s.volume || 0).toLocaleString('fr-FR');
   document.getElementById('t-per').textContent = s.per || 'N/A';
 }
+
 /* ═══════════════════════════════════════════════════════════════
    NEWS
    ═══════════════════════════════════════════════════════════════ */
@@ -1807,7 +1830,7 @@ function updatePortfolio() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SCENARIO & BACKTEST
+   SCENARIO
    ═══════════════════════════════════════════════════════════════ */
 function runScenario() {
   const shock = parseFloat(document.getElementById('sc-shock').value) / 100;
@@ -1842,83 +1865,108 @@ function runScenario() {
   toast('✓ Simulation terminée');
 }
 
-function runBacktest() {
-  const capital = parseFloat(document.getElementById('bt-cap').value);
-  const strategy = document.getElementById('bt-strat').value;
-  const ticker = document.getElementById('bt-tick').value;
-  const feesPct = parseFloat(document.getElementById('bt-fees').value) / 100;
-  const st = market.stocks.find(x => x.ticker === ticker);
-  const data = generateOHLCV(st ? st.price : 5000, 365);
-  const closes = data.map(d => d.close);
+/* ═══════════════════════════════════════════════════════════════
+   BACKTESTING AVANCÉ (Phase 3)
+   ═══════════════════════════════════════════════════════════════ */
+let backtestChart = null;
+let strategySeries = null;
+let buyholdSeries = null;
 
-  let cash = capital, shares = 0, trades = 0, wins = 0;
-  let maxEquity = capital, maxDD = 0;
+async function runBacktest() {
+  const btn = document.getElementById('bt-run');
+  btn.textContent = '⏳ CALCUL EN COURS...';
+  btn.disabled = true;
 
-  for (let i = 50; i < closes.length; i++) {
-    const price = closes[i];
-    let signal = 0;
+  const payload = {
+    symbol: document.getElementById('bt-tick').value.trim(),
+    strategy: document.getElementById('bt-strat').value,
+    start_date: document.getElementById('bt-start').value,
+    end_date: document.getElementById('bt-end').value,
+    initial_capital: parseFloat(document.getElementById('bt-cap').value),
+    fees_pct: parseFloat(document.getElementById('bt-fees').value)
+  };
 
-    if (strategy === 'sma_cross') {
-      const sma20 = closes.slice(i - 20, i).reduce((a, b) => a + b) / 20;
-      const sma50 = closes.slice(i - 50, i).reduce((a, b) => a + b) / 50;
-      const prevSma20 = closes.slice(i - 21, i - 1).reduce((a, b) => a + b) / 20;
-      const prevSma50 = closes.slice(i - 51, i - 1).reduce((a, b) => a + b) / 50;
-      if (prevSma20 <= prevSma50 && sma20 > sma50) signal = 1;
-      else if (prevSma20 >= prevSma50 && sma20 < sma50) signal = -1;
-    } else if (strategy === 'rsi') {
-      const gains = [], losses = [];
-      for (let j = i - 14; j < i; j++) {
-        const d = closes[j + 1] - closes[j];
-        if (d > 0) gains.push(d); else losses.push(-d);
-      }
-      const avgGain = gains.length ? gains.reduce((a, b) => a + b, 0) / 14 : 0;
-      const avgLoss = losses.length ? losses.reduce((a, b) => a + b, 0) / 14 : 0.001;
-      const rs = avgGain / avgLoss;
-      const rsi = 100 - 100 / (1 + rs);
-      if (rsi < 30) signal = 1; else if (rsi > 70) signal = -1;
-    } else if (strategy === 'momentum') {
-      const mom = (closes[i] - closes[i - 20]) / closes[i - 20] * 100;
-      if (mom > 3) signal = 1; else if (mom < -3) signal = -1;
-    } else if (strategy === 'mean_reversion') {
-      const sma = closes.slice(i - 20, i).reduce((a, b) => a + b) / 20;
-      const variance = closes.slice(i - 20, i).reduce((s, p) => s + Math.pow(p - sma, 2), 0) / 20;
-      const std = Math.sqrt(variance);
-      if (price < sma - 2 * std) signal = 1;
-      else if (price > sma + 2 * std) signal = -1;
-    }
+  try {
+    const apiBase = window.API_BASE || 'http://localhost:8000/api/v1';
+    const response = await fetch(`${apiBase}/backtest/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    if (signal === 1 && shares === 0 && cash > 0) {
-      const qty = Math.floor(cash / (price * (1 + feesPct)));
-      if (qty > 0) { shares = qty; cash -= qty * price * (1 + feesPct); trades++; }
-    } else if (signal === -1 && shares > 0) {
-      const entryPrice = (capital - cash) / shares / (1 + feesPct);
-      cash += shares * price * (1 - feesPct);
-      if (price > entryPrice) wins++;
-      shares = 0; trades++;
-    }
+    if (!response.ok) throw new Error((await response.json()).detail || 'Erreur backtest');
+    
+    const result = await response.json();
+    const m = result.metrics;
 
-    const equity = cash + shares * price;
-    if (equity > maxEquity) maxEquity = equity;
-    const dd = (maxEquity - equity) / maxEquity;
-    if (dd > maxDD) maxDD = dd;
+    // 1. Mettre à jour les métriques
+    document.getElementById('m-return').textContent = (m.total_return >= 0 ? '+' : '') + m.total_return + '%';
+    document.getElementById('m-return').style.color = m.total_return >= 0 ? 'var(--up)' : 'var(--down)';
+    
+    document.getElementById('m-bh').textContent = (m.buy_hold_return >= 0 ? '+' : '') + m.buy_hold_return + '%';
+    document.getElementById('m-sharpe').textContent = m.sharpe_ratio;
+    document.getElementById('m-dd').textContent = m.max_drawdown + '%';
+    document.getElementById('m-wr').textContent = m.win_rate + '%';
+    document.getElementById('m-pf').textContent = m.profit_factor;
+    document.getElementById('m-trades').textContent = m.total_trades;
+
+    // 2. Dessiner le graphique d'équité
+    renderBacktestChart(result.chart_data);
+    toast('✓ Backtest terminé avec succès');
+
+  } catch (error) {
+    toast('✗ Erreur: ' + error.message);
+    console.error(error);
+  } finally {
+    btn.textContent = '🚀 LANCER LE BACKTEST';
+    btn.disabled = false;
+  }
+}
+
+function renderBacktestChart(data) {
+  const container = document.getElementById('chart-container-backtest');
+  if (!container) return;
+
+  if (backtestChart) {
+    backtestChart.remove();
   }
 
-  const finalValue = cash + shares * closes[closes.length - 1];
-  const ret = ((finalValue - capital) / capital * 100);
-  const winRate = trades > 0 ? (wins / Math.max(1, Math.floor(trades / 2)) * 100) : 0;
-  const annualizedRet = ret * (252 / closes.length);
+  backtestChart = LightweightCharts.createChart(container, {
+    layout: { background: { type: 'Solid', color: css('--bg') }, textColor: css('--text') },
+    grid: { vertLines: { color: css('--chart-grid') }, horzLines: { color: css('--chart-grid') } },
+    width: container.clientWidth,
+    height: 300,
+    timeScale: { borderColor: css('--border-2') },
+    rightPriceScale: { borderColor: css('--border-2') },
+    crosshair: { mode: 0 }
+  });
 
-  document.getElementById('bt-res').innerHTML = `
-    <div style="margin-bottom:8px"><b style="color:var(--accent)">${strategy}</b> sur <b style="color:var(--cyan)">${ticker}</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Capital initial</span><b>${capital.toLocaleString('fr-FR')}</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Valeur finale</span><b style="color:${finalValue >= capital ? 'var(--up)' : 'var(--down)'}">${finalValue.toFixed(0).toLocaleString('fr-FR')}</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Rendement total</span><b style="color:${ret >= 0 ? 'var(--up)' : 'var(--down)'}">${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Nombre de trades</span><b>${trades}</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>Win Rate</span><b>${winRate.toFixed(0)}%</b></div>
-    <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Max Drawdown</span><b style="color:var(--down)">-${(maxDD * 100).toFixed(2)}%</b></div>
-  `;
-  toast('✓ Backtest terminé');
+  strategySeries = backtestChart.addLineSeries({
+    color: css('--accent'),
+    lineWidth: 2,
+    title: 'Stratégie'
+  });
+  strategySeries.setData(data.map(d => ({ time: d.time, value: d.strategy })));
+
+  buyholdSeries = backtestChart.addLineSeries({
+    color: css('--cyan'),
+    lineWidth: 2,
+    lineStyle: 2, // Pointillés
+    title: 'Buy & Hold'
+  });
+  buyholdSeries.setData(data.map(d => ({ time: d.time, value: d.buyhold })));
+
+  backtestChart.timeScale().fitContent();
 }
+
+window.addEventListener('resize', () => {
+  if (backtestChart) {
+    const container = document.getElementById('chart-container-backtest');
+    if (container) {
+      backtestChart.applyOptions({ width: container.clientWidth });
+    }
+  }
+});
 
 /* ═══════════════════════════════════════════════════════════════
    ANALYST
@@ -2422,7 +2470,6 @@ function switchView(viewId) {
   if (viewId === 'portfolio') updatePortfolio();
   if (viewId === 'charts' && chartBig) setTimeout(() => rebuildCharts(), 50);
   if (viewId === 'quant') renderLeaderboard();
-  // La vue profile est gérée par openUserProfile() qui appelle profileManager.loadProfile()
 }
 
 document.querySelectorAll('.fkey').forEach(btn => {
@@ -2700,7 +2747,6 @@ window.onload = async () => {
   window.STOCKS = market.stocks;
   console.log(`[Market] ✓ ${market.stocks.length} tickers chargés`);
 
-  // Charger les news
   await newsManager.load();
   renderNews();
 
@@ -2725,7 +2771,6 @@ window.onload = async () => {
   scoringEngine.start();
   renderLeaderboard();
 
-  // Initialiser l'UI d'authentification
   updateAuthUI();
 
   setInterval(async () => {
